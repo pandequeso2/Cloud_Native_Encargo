@@ -1,0 +1,41 @@
+import { httpClient } from './httpClient';
+import type {
+  Comentario,
+  Entrega,
+  Grupo,
+  GrupoConIntegrantes,
+  GrupoConTrabajo,
+  Trabajo,
+} from '../types/domain';
+
+// Las rutas coinciden exactamente con las expuestas por el Gateway
+// (Backend/gateway/src/main/resources/application.yaml).
+
+export const gruposApi = {
+  listar: () => httpClient.get<Grupo[]>('/api/v1/grupos').then((r) => r.data),
+  conIntegrantes: (idGrupo: number) =>
+    httpClient
+      .get<GrupoConIntegrantes>(`/api/v1/grupos/${idGrupo}/con-integrantes`)
+      .then((r) => r.data),
+  conTrabajo: (idGrupo: number) =>
+    httpClient.get<GrupoConTrabajo>(`/api/v1/grupos/${idGrupo}/con-trabajo`).then((r) => r.data),
+};
+
+export const trabajosApi = {
+  listar: () => httpClient.get<Trabajo[]>('/api/v1/trabajos').then((r) => r.data),
+};
+
+export const entregasApi = {
+  listar: () => httpClient.get<Entrega[]>('/api/v1/entregas').then((r) => r.data),
+  porGrupo: (idGrupo: number) =>
+    httpClient
+      .get<Entrega[]>('/api/v1/entregas')
+      .then((r) => r.data.filter((e) => e.idGrupo === idGrupo)),
+};
+
+export const comentariosApi = {
+  porEntrega: (idEntrega: number) =>
+    httpClient
+      .get<Comentario[]>('/api/v1/comentarios')
+      .then((r) => r.data.filter((c) => c.idEntrega === idEntrega)),
+};

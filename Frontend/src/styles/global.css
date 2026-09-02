@@ -1,0 +1,378 @@
+/* ============================================================
+   Bitácora — sistema de diseño
+   Metáfora: cuaderno de registro académico. Filas de entradas
+   separadas por líneas finas, no tarjetas con sombra. La tipografía
+   serif da peso a los títulos como si fueran encabezados de acta;
+   el monoespaciado se usa solo donde hay datos tabulares reales
+   (fechas, IDs, porcentajes), nunca como decoración.
+   ============================================================ */
+
+:root {
+  --ink: #1b2340;
+  --ink-soft: #4a5170;
+  --paper: #eef0ec;
+  --paper-raised: #ffffff;
+  --line: #c9cdc0;
+  --confirmed: #2f6f5e;
+  --due-soon: #c98a2c;
+  --overdue: #b0432d;
+
+  --font-display: 'Source Serif 4', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --rail-width: 15rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+/* ---------- Shell: rail + contenido ---------- */
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.rail {
+  width: var(--rail-width);
+  flex-shrink: 0;
+  background: var(--ink);
+  color: #eef0ec;
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.rail__brand {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.rail__brand span {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: #9aa4c4;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+.rail__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.rail__link {
+  text-decoration: none;
+  color: #cfd3e6;
+  padding: 0.55rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.92rem;
+  border-left: 2px solid transparent;
+}
+
+.rail__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rail__link--active {
+  color: #fff;
+  border-left-color: var(--due-soon);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rail__user {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1rem;
+  font-size: 0.82rem;
+}
+
+.rail__user-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.rail__user-roles {
+  color: #9aa4c4;
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.rail__logout {
+  margin-top: 0.75rem;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #eef0ec;
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.rail__logout:hover {
+  border-color: #fff;
+}
+
+.content {
+  flex: 1;
+  padding: 2.5rem 3rem;
+  max-width: 68rem;
+}
+
+.content__header {
+  margin-bottom: 2rem;
+}
+
+.content__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.35rem;
+}
+
+.content__header h1 {
+  font-size: 1.9rem;
+}
+
+.content__subtitle {
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+/* ---------- Ledger (tabla-registro) ---------- */
+
+.ledger {
+  border-top: 1px solid var(--line);
+}
+
+.ledger__row {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+
+.ledger__row--button {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ledger__index {
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.ledger__title {
+  font-weight: 500;
+}
+
+.ledger__meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.status--confirmed .status__dot {
+  background: var(--confirmed);
+}
+
+.status--due .status__dot {
+  background: var(--due-soon);
+}
+
+.status--overdue .status__dot {
+  background: var(--overdue);
+}
+
+/* ---------- Cards de resumen (dashboard) ---------- */
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 2.5rem;
+}
+
+.summary-card {
+  background: var(--paper-raised);
+  padding: 1.25rem 1.4rem;
+}
+
+.summary-card__value {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 600;
+}
+
+.summary-card__label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 0.25rem;
+}
+
+/* ---------- Login ---------- */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  padding: 1.5rem;
+}
+
+.login-card {
+  background: var(--paper);
+  padding: 2.75rem 2.75rem 2.25rem;
+  max-width: 24rem;
+  width: 100%;
+}
+
+.login-card__mark {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.login-card__tagline {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+.login-card__button {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.login-card__button:hover {
+  background: #2a3358;
+}
+
+.login-card__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-card__error {
+  margin-top: 1rem;
+  color: var(--overdue);
+  font-size: 0.85rem;
+}
+
+/* ---------- Estados: vacío / carga / error ---------- */
+
+.state-panel {
+  border: 1px solid var(--line);
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.state-panel--error {
+  color: var(--overdue);
+  border-color: var(--overdue);
+}
+
+/* ---------- Comentarios ---------- */
+
+.comment {
+  border-left: 2px solid var(--line);
+  padding: 0.6rem 0 0.6rem 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.comment__meta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
+
+@media (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+  }
+  .rail {
+    width: 100%;
+  }
+  .content {
+    padding: 1.75rem 1.5rem;
+  }
+}
