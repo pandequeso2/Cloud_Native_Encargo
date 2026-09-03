@@ -5,6 +5,15 @@ spring:
   application:
     name: gateway
 
+# ConfiguraciÃ³n del IDaaS (Microsoft Entra ID)
+# ENTRA_TENANT_ID: Directory (tenant) ID del App Registration
+# ENTRA_AUDIENCE:  Application ID URI del backend, ej: api://<client-id-backend> j
+security:
+  entra-id:
+    tenant-id: ${ENTRA_TENANT_ID:551dc2ab-db79-43ed-97de-ec90a21f3e0c}
+    issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID:551dc2ab-db79-43ed-97de-ec90a21f3e0c}/v2.0
+    audience: ${ENTRA_AUDIENCE:api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366}
+
   cloud:
     gateway:
           routes:

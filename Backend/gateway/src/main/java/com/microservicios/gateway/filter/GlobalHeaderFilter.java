@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
  * el JWT también.
  */
 @Component
-public class UserContextForwardingFilter implements GlobalFilter, Ordered {
+public class GlobalHeaderFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

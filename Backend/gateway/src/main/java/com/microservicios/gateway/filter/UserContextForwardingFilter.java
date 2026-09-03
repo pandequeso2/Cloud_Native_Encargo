@@ -1,5 +1,5 @@
 package com.microservicios.gateway.filter;
- 
+
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -8,9 +8,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
- 
+
 /**
- * Una vez que el JWT fue validado por el Gateway (BFF), este filtro reenvía j
+ * Una vez que el JWT fue validado por el Gateway (BFF), este filtro reenvía
  * la identidad del usuario hacia los microservicios internos mediante
  * headers. Los microservicios NO vuelven a validar el JWT: confían en la red
  * interna y en que solo el Gateway puede llegar a ellos.
@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
  */
 @Component
 public class UserContextForwardingFilter implements GlobalFilter, Ordered {
- 
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
@@ -33,7 +33,7 @@ public class UserContextForwardingFilter implements GlobalFilter, Ordered {
                             .map(Object::toString)
                             .reduce((a, b) -> a + "," + b)
                             .orElse("");
- 
+
                     ServerWebExchange mutated = exchange.mutate()
                             .request(r -> r
                                     .header("X-User-Email", email != null ? email : "")
@@ -44,3 +44,9 @@ public class UserContextForwardingFilter implements GlobalFilter, Ordered {
                 .defaultIfEmpty(exchange)
                 .flatMap(chain::filter);
     }
+
+    @Override
+    public int getOrder() {
+        return -1;
+    }
+}

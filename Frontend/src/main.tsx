@@ -8,13 +8,11 @@ import App from './App.tsx';
 import { msalInstance } from './auth/msalInstance';
 
 // La instancia debe estar inicializada antes de renderizar el árbol.
+// No llamamos handleRedirectPromise() aquí: MsalProvider ya lo hace
+// automáticamente al montarse. Llamarlo dos veces (aquí y en el Provider)
+// provoca "no_token_request_cache_error", porque la segunda llamada no
+// encuentra el estado temporal que la primera ya consumió.
 msalInstance.initialize().then(() => {
-  // Maneja el redirect de vuelta desde Entra ID después del login (si se
-  // usa el flujo redirect en vez de popup en algún punto de la app).
-  msalInstance.handleRedirectPromise().catch((error) => {
-    console.error('Error procesando el redirect de autenticación:', error);
-  });
-
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <MsalProvider instance={msalInstance}>
