@@ -1,0 +1,126 @@
+server:
+  port: 8095
+
+spring:
+  application:
+    name: gateway
+
+# ConfiguraciÃ³n del IDaaS (Microsoft Entra ID)
+# ENTRA_TENANT_ID: Directory (tenant) ID del App Registration
+# ENTRA_AUDIENCE:  Application ID URI del backend, ej: api://<client-id-backend> j
+security:
+  entra-id:
+    tenant-id: ${ENTRA_TENANT_ID:CAMBIAR_TENANT_ID}
+    issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID:CAMBIAR_TENANT_ID}/v2.0
+    audience: ${ENTRA_AUDIENCE:api://CAMBIAR_CLIENT_ID}
+
+  cloud:
+    gateway:
+          routes:
+
+            - id: notas
+              uri: http://notas-service:8083
+              predicates:
+                - Path=/api/v1/notas/**
+
+            - id: ponderaciones
+              uri: http://notas-service:8083
+              predicates:
+                - Path=/api/v1/ponderaciones/**
+
+            - id: asignaturas
+              uri: http://asignaturas-service:8084
+              predicates:
+                - Path=/api/v1/asignaturas/**
+
+            - id: unidades
+              uri: http://asignaturas-service:8084
+              predicates:
+                - Path=/api/v1/unidades/**
+
+            - id: profesores
+              uri: http://profesores-service:8085
+              predicates:
+                - Path=/api/v1/profesores/**
+
+            - id: grupos
+              uri: http://grupos-service:8086
+              predicates:
+                - Path=/api/v1/grupos/**
+
+            - id: integrantes
+              uri: http://integrantes-service:8087
+              predicates:
+                - Path=/api/v1/integrantes/**
+
+            - id: roles
+              uri: http://roles-service:8088
+              predicates:
+                - Path=/api/v1/roles/**
+
+            - id: secciones
+              uri: http://secciones-service:8089
+              predicates:
+                - Path=/api/v1/secciones/**
+
+            - id: trabajos
+              uri: http://trabajos-service:8090
+              predicates:
+                - Path=/api/v1/trabajos/**
+
+            - id: entregas
+              uri: http://entregas-service:8091
+              predicates:
+                - Path=/api/v1/entregas/**
+
+            - id: comentarios
+              uri: http://comentarios-service:8092
+              predicates:
+                - Path=/api/v1/comentarios/**
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: notas
+        url: /api/v1/notas/v3/api-docs/notas
+
+      - name: ponderaciones
+        url: /api/v1/notas/v3/api-docs/ponderaciones
+
+      - name: asignaturas
+        url: /api/v1/asignaturas/v3/api-docs/asignaturas
+
+      - name: unidades
+        url: /api/v1/asignaturas/v3/api-docs/unidades
+
+      - name: profesores
+        url: /api/v1/profesores/v3/api-docs
+
+      - name: grupos
+        url: /api/v1/grupos/v3/api-docs
+
+      - name: integrantes
+        url: /api/v1/integrantes/v3/api-docs
+
+      - name: roles
+        url: /api/v1/roles/v3/api-docs
+
+      - name: secciones
+        url: /api/v1/secciones/v3/api-docs
+
+      - name: trabajos
+        url: /api/v1/trabajos/v3/api-docs
+
+      - name: entregas
+        url: /api/v1/entregas/v3/api-docs
+
+      - name: comentarios
+        url: /api/v1/comentarios/v3/api-docs
