@@ -81,7 +81,7 @@ public class SecurityConfig {
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         // Ajustar al/los origen(es) real(es) donde correrá el frontend React (dev y prod)
-        config.setAllowedOriginPatterns(List.of("http://localhost:3000", "https://*.tudominio.cl"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.tudominio.cl"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

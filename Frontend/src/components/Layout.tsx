@@ -15,7 +15,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const auth = useAuthInfo();
 
   const handleLogout = () => {
-    instance.logoutPopup({ postLogoutRedirectUri: '/' });
+    instance.logoutRedirect({ postLogoutRedirectUri: '/' });
   };
 
   return (

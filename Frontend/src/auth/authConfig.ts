@@ -1,4 +1,4 @@
-import type { Configuration, PopupRequest } from '@azure/msal-browser';
+import type { Configuration, RedirectRequest } from '@azure/msal-browser';
 import { LogLevel } from '@azure/msal-browser';
 
 // Variables de entorno (definir en .env, ver .env.example).
@@ -14,6 +14,9 @@ export const msalConfig: Configuration = {
   auth: {
     clientId,
     authority: `https://login.microsoftonline.com/${tenantId}`,
+    // Con flujo de redirect, esta URL debe ser la raíz de la app (donde
+    // React Router y ProtectedRoute puedan procesar el resultado), no una
+    // página en blanco separada como se necesitaba para popups.
     redirectUri: import.meta.env.VITE_REDIRECT_URI ?? window.location.origin,
     postLogoutRedirectUri: '/',
   },
@@ -32,12 +35,12 @@ export const msalConfig: Configuration = {
 };
 
 // Scope de login: solo identidad básica.
-export const loginRequest: PopupRequest = {
+export const loginRequest: RedirectRequest = {
   scopes: ['openid', 'profile'],
 };
 
 // Scope para llamar al Gateway (backend). Debe coincidir con el scope
 // expuesto en "Expose an API" del App Registration del backend.
-export const apiRequest: PopupRequest = {
+export const apiRequest: RedirectRequest = {
   scopes: [`api://${apiClientId}/access_as_user`],
 };

@@ -11,7 +11,12 @@ export const httpClient = axios.create({ baseURL });
  * Equivalente al MsalInterceptor de msal-angular: antes de cada request,
  * intenta obtener el access token en silencio (desde caché o refresh
  * silencioso vía iframe). Si la sesión expiró o requiere interacción del
- * usuario (MFA, consentimiento, etc.), cae a un popup de login.
+ * usuario (MFA, consentimiento, etc.), redirige la página completa para
+ * renovar la sesión — no hay popup que abrir en este flujo.
+ *
+ * Nota: acquireTokenRedirect navega fuera de la página, así que la
+ * petición actual no se completa en este ciclo; el usuario vuelve
+ * autenticado y repite la acción normalmente.
  */
 httpClient.interceptors.request.use(async (config) => {
   const account = msalInstance.getActiveAccount();
@@ -27,11 +32,12 @@ httpClient.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${result.accessToken}`;
   } catch (error) {
     if (error instanceof InteractionRequiredAuthError) {
-      const result = await msalInstance.acquireTokenPopup(apiRequest);
-      config.headers.Authorization = `Bearer ${result.accessToken}`;
-    } else {
-      throw error;
+      await msalInstance.acquireTokenRedirect(apiRequest);
+      // La línea siguiente no debería alcanzarse: el navegador ya está
+      // navegando hacia Entra ID en este punto.
+      throw new Error('Redirigiendo para renovar la sesión…');
     }
+    throw error;
   }
 
   return config;
