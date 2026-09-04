@@ -4,83 +4,83 @@ server:
 spring:
   application:
     name: gateway
-
-# ConfiguraciÃ³n del IDaaS (Microsoft Entra ID)
-# ENTRA_TENANT_ID: Directory (tenant) ID del App Registration
-# ENTRA_AUDIENCE:  Application ID URI del backend, ej: api://<client-id-backend> j
-security:
-  entra-id:
-    tenant-id: ${ENTRA_TENANT_ID:551dc2ab-db79-43ed-97de-ec90a21f3e0c}
-    issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID:551dc2ab-db79-43ed-97de-ec90a21f3e0c}/v2.0
-    audience: ${ENTRA_AUDIENCE:api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366}
-
   cloud:
     gateway:
-          routes:
+      routes:
 
-            - id: notas
-              uri: http://notas-service:8083
-              predicates:
-                - Path=/api/v1/notas/**
+        - id: notas
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/notas/**
 
-            - id: ponderaciones
-              uri: http://notas-service:8083
-              predicates:
-                - Path=/api/v1/ponderaciones/**
+        - id: ponderaciones
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/v1/ponderaciones/**
 
-            - id: asignaturas
-              uri: http://asignaturas-service:8084
-              predicates:
-                - Path=/api/v1/asignaturas/**
+        - id: asignaturas
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/v1/asignaturas/**
 
-            - id: unidades
-              uri: http://asignaturas-service:8084
-              predicates:
-                - Path=/api/v1/unidades/**
+        - id: unidades
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/v1/unidades/**
 
-            - id: profesores
-              uri: http://profesores-service:8085
-              predicates:
-                - Path=/api/v1/profesores/**
+        - id: profesores
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/v1/profesores/**
 
-            - id: grupos
-              uri: http://grupos-service:8086
-              predicates:
-                - Path=/api/v1/grupos/**
+        - id: grupos
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/v1/grupos/**
 
-            - id: integrantes
-              uri: http://integrantes-service:8087
-              predicates:
-                - Path=/api/v1/integrantes/**
+        - id: integrantes
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/v1/integrantes/**
 
-            - id: roles
-              uri: http://roles-service:8088
-              predicates:
-                - Path=/api/v1/roles/**
+        - id: roles
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/v1/roles/**
 
-            - id: secciones
-              uri: http://secciones-service:8089
-              predicates:
-                - Path=/api/v1/secciones/**
+        - id: secciones
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/v1/secciones/**
 
-            - id: trabajos
-              uri: http://trabajos-service:8090
-              predicates:
-                - Path=/api/v1/trabajos/**
+        - id: trabajos
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/v1/trabajos/**
 
-            - id: entregas
-              uri: http://entregas-service:8091
-              predicates:
-                - Path=/api/v1/entregas/**
+        - id: entregas
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/v1/entregas/**
 
-            - id: comentarios
-              uri: http://comentarios-service:8092
-              predicates:
-                - Path=/api/v1/comentarios/**
+        - id: comentarios
+          uri: http://localhost:8092
+          predicates:
+            - Path=/api/v1/comentarios/**
+
+# Configuración del IDaaS (Microsoft Entra ID)
+# ENTRA_TENANT_ID: Directory (tenant) ID del App Registration
+# ENTRA_AUDIENCE:  Application ID URI del backend, ej: api://<client-id-backend>
+security:
+  entra-id:
+    tenant-id: 551dc2ab-db79-43ed-97de-ec90a21f3e0c
+    issuer-uri: https://login.microsoftonline.com/551dc2ab-db79-43ed-97de-ec90a21f3e0c/v2.0
+    audience: cdde4875-2f04-4a9e-b27c-2e1ad93c9366
+
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
 
