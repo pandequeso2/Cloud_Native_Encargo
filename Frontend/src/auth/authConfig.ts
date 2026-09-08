@@ -1,27 +1,25 @@
 import type { Configuration, RedirectRequest } from '@azure/msal-browser';
 import { LogLevel } from '@azure/msal-browser';
 
-// Variables de entorno (definir en .env, ver .env.example).
-// VITE_ENTRA_CLIENT_ID: Application (client) ID del App Registration del SPA.
-// VITE_ENTRA_TENANT_ID: Directory (tenant) ID.
-// VITE_ENTRA_API_CLIENT_ID: client-id del App Registration del backend
-//   (el mismo que usa el Gateway como ENTRA_AUDIENCE).
-const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID as string;
-const tenantId = import.meta.env.VITE_ENTRA_TENANT_ID as string;
-const apiClientId = import.meta.env.VITE_ENTRA_API_CLIENT_ID as string;
+// Valores hardcodeados a propósito (decisión del equipo) para no tener que
+// recrear el .env cada vez que se cambia de computador. Como contrapartida,
+// estos IDs quedan visibles en el repositorio de GitHub. No son secretos
+// como una contraseña (un tenant/client ID no permite autenticarse por sí
+// solo), pero sí identifican públicamente el tenant de Entra ID del equipo.
+const clientId = 'be1f94f2-51ba-4a74-ab8d-b258e2123e6e';
+const tenantId = '551dc2ab-db79-43ed-97de-ec90a21f3e0c';
+const apiClientId = 'cdde4875-2f04-4a9e-b27c-2e1ad93c9366';
+const apiBaseUrl = 'http://localhost:8095';
+const redirectUri = 'http://localhost:5173';
 
 export const msalConfig: Configuration = {
   auth: {
     clientId,
     authority: `https://login.microsoftonline.com/${tenantId}`,
-    // Con flujo de redirect, esta URL debe ser la raíz de la app (donde
-    // React Router y ProtectedRoute puedan procesar el resultado), no una
-    // página en blanco separada como se necesitaba para popups.
-    redirectUri: import.meta.env.VITE_REDIRECT_URI ?? window.location.origin,
+    redirectUri,
     postLogoutRedirectUri: '/',
   },
   cache: {
-    // sessionStorage evita que el token sobreviva entre pestañas/sesiones distintas.
     cacheLocation: 'sessionStorage',
   },
   system: {
@@ -34,13 +32,12 @@ export const msalConfig: Configuration = {
   },
 };
 
-// Scope de login: solo identidad básica.
 export const loginRequest: RedirectRequest = {
   scopes: ['openid', 'profile'],
 };
 
-// Scope para llamar al Gateway (backend). Debe coincidir con el scope
-// expuesto en "Expose an API" del App Registration del backend.
 export const apiRequest: RedirectRequest = {
   scopes: [`api://${apiClientId}/access_as_user`],
 };
+
+export const API_BASE_URL = apiBaseUrl;

@@ -1,0 +1,218 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  eureka-server:
+    build: ./Backend/eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - backend
+
+  notas-service:
+    build: ./Backend/notas_service
+    container_name: notas-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8083:8083"
+    networks:
+      - backend
+
+  asignaturas-service:
+    build: ./Backend/asignaturas_service
+    container_name: asignaturas-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8084:8084"
+    networks:
+      - backend
+
+  profesores-service:
+    build: ./Backend/profesores_service
+    container_name: profesores-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8085:8085"
+    networks:
+      - backend
+
+  grupos-service:
+    build: ./Backend/grupos_service
+    container_name: grupos-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8086:8086"
+    networks:
+      - backend
+
+  integrantes-service:
+    build: ./Backend/integrantes_service
+    container_name: integrantes-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8087:8087"
+    networks:
+      - backend
+
+  roles-service:
+    build: ./Backend/roles_service
+    container_name: roles-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8088:8088"
+    networks:
+      - backend
+
+  secciones-service:
+    build: ./Backend/secciones_service
+    container_name: secciones-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8089:8089"
+    networks:
+      - backend
+
+  trabajos-service:
+    build: ./Backend/trabajos_service
+    container_name: trabajos-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8090:8090"
+    networks:
+      - backend
+
+  entregas-service:
+    build: ./Backend/entregas_service
+    container_name: entregas-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8091:8091"
+    networks:
+      - backend
+
+  comentarios-service:
+    build: ./Backend/comentarios_service
+    container_name: comentarios-service
+    environment:
+      DB_HOST: mysql
+      EUREKA_HOST: eureka-server
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8092:8092"
+    networks:
+      - backend
+
+  gateway:
+    build: ./Backend/gateway
+    container_name: gateway
+    environment:
+      EUREKA_HOST: eureka-server
+      NOTAS_HOST: notas-service
+      ASIGNATURAS_HOST: asignaturas-service
+      PROFESORES_HOST: profesores-service
+      GRUPOS_HOST: grupos-service
+      INTEGRANTES_HOST: integrantes-service
+      ROLES_HOST: roles-service
+      SECCIONES_HOST: secciones-service
+      TRABAJOS_HOST: trabajos-service
+      ENTREGAS_HOST: entregas-service
+      COMENTARIOS_HOST: comentarios-service
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID}
+      ENTRA_AUDIENCE: ${ENTRA_AUDIENCE}
+    depends_on:
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8095:8095"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mysql_data:

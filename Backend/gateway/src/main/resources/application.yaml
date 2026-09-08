@@ -9,78 +9,76 @@ spring:
       routes:
 
         - id: notas
-          uri: http://localhost:8083
+          uri: http://${NOTAS_HOST:localhost}:8083
           predicates:
             - Path=/api/v1/notas/**
 
         - id: ponderaciones
-          uri: http://localhost:8083
+          uri: http://${NOTAS_HOST:localhost}:8083
           predicates:
             - Path=/api/v1/ponderaciones/**
 
         - id: asignaturas
-          uri: http://localhost:8084
+          uri: http://${ASIGNATURAS_HOST:localhost}:8084
           predicates:
             - Path=/api/v1/asignaturas/**
 
         - id: unidades
-          uri: http://localhost:8084
+          uri: http://${ASIGNATURAS_HOST:localhost}:8084
           predicates:
             - Path=/api/v1/unidades/**
 
         - id: profesores
-          uri: http://localhost:8085
+          uri: http://${PROFESORES_HOST:localhost}:8085
           predicates:
             - Path=/api/v1/profesores/**
 
         - id: grupos
-          uri: http://localhost:8086
+          uri: http://${GRUPOS_HOST:localhost}:8086
           predicates:
             - Path=/api/v1/grupos/**
 
         - id: integrantes
-          uri: http://localhost:8087
+          uri: http://${INTEGRANTES_HOST:localhost}:8087
           predicates:
             - Path=/api/v1/integrantes/**
 
         - id: roles
-          uri: http://localhost:8088
+          uri: http://${ROLES_HOST:localhost}:8088
           predicates:
             - Path=/api/v1/roles/**
 
         - id: secciones
-          uri: http://localhost:8089
+          uri: http://${SECCIONES_HOST:localhost}:8089
           predicates:
             - Path=/api/v1/secciones/**
 
         - id: trabajos
-          uri: http://localhost:8090
+          uri: http://${TRABAJOS_HOST:localhost}:8090
           predicates:
             - Path=/api/v1/trabajos/**
 
         - id: entregas
-          uri: http://localhost:8091
+          uri: http://${ENTREGAS_HOST:localhost}:8091
           predicates:
             - Path=/api/v1/entregas/**
 
         - id: comentarios
-          uri: http://localhost:8092
+          uri: http://${COMENTARIOS_HOST:localhost}:8092
           predicates:
             - Path=/api/v1/comentarios/**
 
 # Configuración del IDaaS (Microsoft Entra ID)
-# ENTRA_TENANT_ID: Directory (tenant) ID del App Registration
-# ENTRA_AUDIENCE:  Application ID URI del backend, ej: api://<client-id-backend>
 security:
   entra-id:
-    tenant-id: 551dc2ab-db79-43ed-97de-ec90a21f3e0c
-    issuer-uri: https://login.microsoftonline.com/551dc2ab-db79-43ed-97de-ec90a21f3e0c/v2.0
-    audience: cdde4875-2f04-4a9e-b27c-2e1ad93c9366
+    tenant-id: ${ENTRA_TENANT_ID}
+    issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+    audience: ${ENTRA_AUDIENCE}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
     prefer-ip-address: true
 
@@ -91,36 +89,25 @@ springdoc:
     urls:
       - name: notas
         url: /api/v1/notas/v3/api-docs/notas
-
       - name: ponderaciones
         url: /api/v1/notas/v3/api-docs/ponderaciones
-
       - name: asignaturas
         url: /api/v1/asignaturas/v3/api-docs/asignaturas
-
       - name: unidades
         url: /api/v1/asignaturas/v3/api-docs/unidades
-
       - name: profesores
         url: /api/v1/profesores/v3/api-docs
-
       - name: grupos
         url: /api/v1/grupos/v3/api-docs
-
       - name: integrantes
         url: /api/v1/integrantes/v3/api-docs
-
       - name: roles
         url: /api/v1/roles/v3/api-docs
-
       - name: secciones
         url: /api/v1/secciones/v3/api-docs
-
       - name: trabajos
         url: /api/v1/trabajos/v3/api-docs
-
       - name: entregas
         url: /api/v1/entregas/v3/api-docs
-
       - name: comentarios
         url: /api/v1/comentarios/v3/api-docs

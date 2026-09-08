@@ -1,11 +1,9 @@
 import axios from 'axios';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import { msalInstance } from '../auth/msalInstance';
-import { apiRequest } from '../auth/authConfig';
+import { apiRequest, API_BASE_URL } from '../auth/authConfig';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8095';
-
-export const httpClient = axios.create({ baseURL });
+export const httpClient = axios.create({ baseURL: API_BASE_URL });
 
 /**
  * Equivalente al MsalInterceptor de msal-angular: antes de cada request,
