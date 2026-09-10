@@ -5,6 +5,7 @@ import type {
   Grupo,
   GrupoConIntegrantes,
   GrupoConTrabajo,
+  Integrante,
   Trabajo,
 } from '../types/domain';
 
@@ -17,6 +18,8 @@ export interface NuevoGrupo {
   fechaCreacion: string; // formato ISO yyyy-MM-dd, tal como lo espera LocalDate en el backend
   grupoLleno: boolean;
 }
+
+export type NuevoIntegrante = Omit<Integrante, 'idIntegrante'>;
 
 export interface NuevoTrabajo {
   nombreTrabajo: string;
@@ -63,4 +66,10 @@ export const comentariosApi = {
     httpClient
       .get<Comentario[]>('/api/v1/comentarios')
       .then((r) => r.data.filter((c) => c.idEntrega === idEntrega)),
+};
+
+export const integrantesApi = {
+  listar: () => httpClient.get<Integrante[]>('/api/v1/integrantes').then((r) => r.data),
+  crear: (nuevo: NuevoIntegrante) =>
+    httpClient.post<Integrante>('/api/v1/integrantes', nuevo).then((r) => r.data),
 };

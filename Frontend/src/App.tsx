@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Grupos } from './pages/Grupos';
+import { Integrantes } from './pages/Integrantes';
 import { GrupoDetalle } from './pages/GrupoDetalle';
 import { Trabajos } from './pages/Trabajos';
 import { Entregas } from './pages/Entregas';
@@ -21,6 +22,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/grupos" element={<Grupos />} />
+                <Route path="/integrantes" element={<Integrantes />} />
                 <Route path="/grupos/:idGrupo" element={<GrupoDetalle />} />
                 <Route path="/trabajos" element={<Trabajos />} />
                 <Route path="/entregas" element={<Entregas />} />

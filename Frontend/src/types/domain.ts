@@ -14,10 +14,16 @@ export interface Integrante {
   idIntegrante: number;
   nombre: string;
   apellido: string;
+  rutCuerpo: number;
+  rutDv: string;
   correoElectronico: string;
+  idRol: number;
   idGrupo: number;
-  disponibilidad: 'BAJA' | 'MEDIA' | 'ALTA';
+  disponibilidad: Disponibilidad;
+  idNota: number;
 }
+
+export type Disponibilidad = 'BAJA' | 'MEDIA' | 'ALTA';
 
 export type EstadoTrabajo = 'PENDIENTE' | 'ENTREGADO' | 'EVALUADO';
 export type TipoTrabajo = 'ENCARGO' | 'PRESENTACION' | 'OTRO';

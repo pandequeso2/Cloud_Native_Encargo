@@ -6,6 +6,7 @@ import { useAuthInfo } from '../auth/useAuthInfo';
 const NAV_ITEMS = [
   { to: '/', label: 'Resumen', end: true },
   { to: '/grupos', label: 'Grupos' },
+  { to: '/integrantes', label: 'Integrantes' },
   { to: '/trabajos', label: 'Trabajos' },
   { to: '/entregas', label: 'Entregas' },
 ];
