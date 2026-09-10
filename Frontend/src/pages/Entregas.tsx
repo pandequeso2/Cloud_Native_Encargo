@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { comentariosApi, entregasApi } from '../api/services';
 import type { Comentario, Entrega } from '../types/domain';
 import { EmptyPanel, ErrorPanel, LoadingPanel } from '../components/AsyncState';
+import { NuevaEntregaModal } from '../components/NuevaEntregaModal';
+import { useAuthInfo } from '../auth/useAuthInfo';
 
 export function Entregas() {
+  const auth = useAuthInfo();
   const [entregas, setEntregas] = useState<Entrega[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<number | null>(null);
   const [comentarios, setComentarios] = useState<Record<number, Comentario[]>>({});
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   useEffect(() => {
     entregasApi
@@ -28,6 +32,11 @@ export function Entregas() {
     }
   };
 
+  const handleEntregaCreada = (nueva: Entrega) => {
+    setEntregas((prev) => (prev ? [...prev, nueva] : [nueva]));
+    setModalAbierto(false);
+  };
+
   return (
     <>
       <header className="content__header">
@@ -37,6 +46,14 @@ export function Entregas() {
           Haz clic en una entrega para ver los comentarios del profesor asociados.
         </p>
       </header>
+
+      {auth?.hasRole('Admin') && (
+        <div className="content__actions">
+          <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+            + Nueva entrega
+          </button>
+        </div>
+      )}
 
       {error && <ErrorPanel message={error} />}
       {!error && !entregas && <LoadingPanel label="Cargando entregas…" />}
@@ -79,6 +96,10 @@ export function Entregas() {
             </div>
           ))}
         </div>
+      )}
+
+      {modalAbierto && (
+        <NuevaEntregaModal onClose={() => setModalAbierto(false)} onCreated={handleEntregaCreada} />
       )}
     </>
   );

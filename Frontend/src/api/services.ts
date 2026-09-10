@@ -27,6 +27,8 @@ export interface NuevoTrabajo {
   estado: Trabajo['estado'];
 }
 
+export type NuevaEntrega = Omit<Entrega, 'idEntrega'>;
+
 export const gruposApi = {
   listar: () => httpClient.get<Grupo[]>('/api/v1/grupos').then((r) => r.data),
   conIntegrantes: (idGrupo: number) =>
@@ -48,6 +50,8 @@ export const trabajosApi = {
 
 export const entregasApi = {
   listar: () => httpClient.get<Entrega[]>('/api/v1/entregas').then((r) => r.data),
+  crear: (nueva: NuevaEntrega) =>
+    httpClient.post<Entrega>('/api/v1/entregas', nueva).then((r) => r.data),
   porGrupo: (idGrupo: number) =>
     httpClient
       .get<Entrega[]>('/api/v1/entregas')
