@@ -3,13 +3,14 @@ package com.microservicios.gateway.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,8 +26,6 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    // Endpoints públicos: documentación y health check.
-    // Todo lo demás (todas las rutas /api/v1/**) exige un JWT válido de Entra ID. j
     private static final String[] PUBLIC_PATHS = {
             "/actuator/health",
             "/swagger-ui.html",
@@ -42,6 +41,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(PUBLIC_PATHS).permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/grupos/**").hasRole("Admin")
+                        .pathMatchers(HttpMethod.PUT, "/api/v1/grupos/**").hasRole("Admin")
+                        .pathMatchers(HttpMethod.DELETE, "/api/v1/grupos/**").hasRole("Admin")
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -50,37 +52,47 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Entra ID entrega los roles de aplicación (App Roles) en el claim "roles"
-     * y los permisos delegados en el claim "scp". Mapeamos ambos a
-     * GrantedAuthority para poder usar @PreAuthorize("hasRole('...')") o
-     * reglas por ruta más adelante si se requiere autorización fina.
-     */
     private Converter<Jwt, Mono<AbstractAuthenticationToken>> entraJwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter rolesConverter = new JwtGrantedAuthoritiesConverter();
-        rolesConverter.setAuthorityPrefix("ROLE_");
-        rolesConverter.setAuthoritiesClaimName("roles");
-
-        JwtGrantedAuthoritiesConverter scopesConverter = new JwtGrantedAuthoritiesConverter();
-        scopesConverter.setAuthorityPrefix("SCOPE_");
-        scopesConverter.setAuthoritiesClaimName("scp");
-
-        Converter<Jwt, Collection<GrantedAuthority>> combinedAuthorities = jwt -> {
+        Converter<Jwt, Collection<GrantedAuthority>> customAuthoritiesConverter = jwt -> {
             Collection<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.addAll(rolesConverter.convert(jwt));
-            authorities.addAll(scopesConverter.convert(jwt));
+
+            String email = jwt.getClaimAsString("preferred_username");
+            if (email == null || email.isBlank()) {
+                email = jwt.getClaimAsString("email");
+            }
+
+            String rol = resolverRolPorEmail(email);
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + rol));
+
             return authorities;
         };
 
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(combinedAuthorities);
+        converter.setJwtGrantedAuthoritiesConverter(customAuthoritiesConverter);
 
         return new ReactiveJwtAuthenticationConverterAdapter(converter);
     }
 
+    private String resolverRolPorEmail(String email) {
+        if (email == null) {
+            return "Estudiante";
+        }
+
+        String emailLower = email.toLowerCase().trim();
+
+        if (emailLower.equals("ben.arayag@duocuc.cl")) {
+            return "Admin";
+        } else if (emailLower.equals("vi.garridod@duocuc.cl")) {
+            return "Profesor";
+        } else if (emailLower.equals("mat.mirandag@duocuc.cl")) {
+            return "Estudiante";
+        }
+
+        return "Estudiante";
+    }
+
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Ajustar al/los origen(es) real(es) donde correrá el frontend React (dev y prod)
         config.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.tudominio.cl"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
