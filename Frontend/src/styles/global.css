@@ -376,3 +376,127 @@ button {
     padding: 1.75rem 1.5rem;
   }
 }
+
+/* ---------- Acciones de escritura ---------- */
+
+.content__actions {
+  margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #2a3358;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+/* ---------- Modal ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 35, 64, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modal-panel {
+  background: var(--paper-raised);
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.75rem;
+}
+
+.modal-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modal-panel__header h3 {
+  font-size: 1.15rem;
+}
+
+.modal-panel__close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+/* ---------- Formularios ---------- */
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
+}
+
+.form-field label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.form-field input[type='text'],
+.form-field input[type='number'],
+.form-field input[type='date'] {
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.92rem;
+  font-family: inherit;
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.form-field input:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.form-field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.form-error {
+  color: var(--overdue);
+  font-size: 0.85rem;
+  margin-top: -0.3rem;
+  margin-bottom: 1rem;
+}

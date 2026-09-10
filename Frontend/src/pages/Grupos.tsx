@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 import { gruposApi } from '../api/services';
 import type { Grupo } from '../types/domain';
 import { EmptyPanel, ErrorPanel, LoadingPanel, StatusBadge } from '../components/AsyncState';
+import { NuevoGrupoModal } from '../components/NuevoGrupoModal';
+import { useAuthInfo } from '../auth/useAuthInfo';
 
 export function Grupos() {
+  const auth = useAuthInfo();
   const [grupos, setGrupos] = useState<Grupo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   useEffect(() => {
     gruposApi
@@ -14,6 +18,11 @@ export function Grupos() {
       .then(setGrupos)
       .catch((err) => setError(err.message ?? 'No se pudieron cargar los grupos.'));
   }, []);
+
+  const handleGrupoCreado = (nuevo: Grupo) => {
+    setGrupos((prev) => (prev ? [...prev, nuevo] : [nuevo]));
+    setModalAbierto(false);
+  };
 
   return (
     <>
@@ -24,6 +33,17 @@ export function Grupos() {
           Todos los grupos registrados en el taller, con su capacidad y estado de cupo.
         </p>
       </header>
+
+      {/* Solo Admin tiene permiso de escritura sobre /api/v1/grupos en el Gateway
+          (ver SecurityConfig.java, CATALOGO_PATHS). Ocultamos el botón para los
+          demás roles para no ofrecer una acción que el backend va a rechazar. */}
+      {auth?.hasRole('Admin') && (
+        <div className="content__actions">
+          <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+            + Nuevo grupo
+          </button>
+        </div>
+      )}
 
       {error && <ErrorPanel message={error} />}
       {!error && !grupos && <LoadingPanel label="Cargando grupos…" />}
@@ -47,6 +67,10 @@ export function Grupos() {
             </Link>
           ))}
         </div>
+      )}
+
+      {modalAbierto && (
+        <NuevoGrupoModal onClose={() => setModalAbierto(false)} onCreated={handleGrupoCreado} />
       )}
     </>
   );

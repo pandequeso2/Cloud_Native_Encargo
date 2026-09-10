@@ -11,6 +11,13 @@ import type {
 // Las rutas coinciden exactamente con las expuestas por el Gateway
 // (Backend/gateway/src/main/resources/application.yaml).
 
+export interface NuevoGrupo {
+  nombreGrupo: string;
+  capacidadMaxima: number;
+  fechaCreacion: string; // formato ISO yyyy-MM-dd, tal como lo espera LocalDate en el backend
+  grupoLleno: boolean;
+}
+
 export const gruposApi = {
   listar: () => httpClient.get<Grupo[]>('/api/v1/grupos').then((r) => r.data),
   conIntegrantes: (idGrupo: number) =>
@@ -19,6 +26,9 @@ export const gruposApi = {
       .then((r) => r.data),
   conTrabajo: (idGrupo: number) =>
     httpClient.get<GrupoConTrabajo>(`/api/v1/grupos/${idGrupo}/con-trabajo`).then((r) => r.data),
+  // Solo el rol Admin tiene permiso en el Gateway para este endpoint (POST /api/v1/grupos).
+  crear: (nuevo: NuevoGrupo) =>
+    httpClient.post<Grupo>('/api/v1/grupos', nuevo).then((r) => r.data),
 };
 
 export const trabajosApi = {
