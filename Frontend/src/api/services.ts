@@ -18,6 +18,15 @@ export interface NuevoGrupo {
   grupoLleno: boolean;
 }
 
+export interface NuevoTrabajo {
+  nombreTrabajo: string;
+  porcentajeNota: number;
+  idGrupo: number;
+  tipoTrabajo: Trabajo['tipoTrabajo'];
+  semestre: number;
+  estado: Trabajo['estado'];
+}
+
 export const gruposApi = {
   listar: () => httpClient.get<Grupo[]>('/api/v1/grupos').then((r) => r.data),
   conIntegrantes: (idGrupo: number) =>
@@ -33,6 +42,8 @@ export const gruposApi = {
 
 export const trabajosApi = {
   listar: () => httpClient.get<Trabajo[]>('/api/v1/trabajos').then((r) => r.data),
+  crear: (nuevo: NuevoTrabajo) =>
+    httpClient.post<Trabajo>('/api/v1/trabajos', nuevo).then((r) => r.data),
 };
 
 export const entregasApi = {

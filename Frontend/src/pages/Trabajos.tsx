@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { trabajosApi } from '../api/services';
 import type { EstadoTrabajo, Trabajo } from '../types/domain';
 import { EmptyPanel, ErrorPanel, LoadingPanel, StatusBadge } from '../components/AsyncState';
+import { NuevoTrabajoModal } from '../components/NuevoTrabajoModal';
+import { useAuthInfo } from '../auth/useAuthInfo';
 
 const ESTADO_UI: Record<EstadoTrabajo, { label: string; kind: 'confirmed' | 'due' | 'overdue' }> = {
   EVALUADO: { label: 'Evaluado', kind: 'confirmed' },
@@ -10,8 +12,10 @@ const ESTADO_UI: Record<EstadoTrabajo, { label: string; kind: 'confirmed' | 'due
 };
 
 export function Trabajos() {
+  const auth = useAuthInfo();
   const [trabajos, setTrabajos] = useState<Trabajo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   useEffect(() => {
     trabajosApi
@@ -19,6 +23,11 @@ export function Trabajos() {
       .then(setTrabajos)
       .catch((err) => setError(err.message ?? 'No se pudieron cargar los trabajos.'));
   }, []);
+
+  const handleTrabajoCreado = (nuevo: Trabajo) => {
+    setTrabajos((prev) => (prev ? [...prev, nuevo] : [nuevo]));
+    setModalAbierto(false);
+  };
 
   return (
     <>
@@ -29,6 +38,14 @@ export function Trabajos() {
           Encargos, presentaciones y otros trabajos asignados a los grupos, con su estado actual.
         </p>
       </header>
+
+      {auth?.hasRole('Admin') && (
+        <div className="content__actions">
+          <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+            + Nuevo trabajo
+          </button>
+        </div>
+      )}
 
       {error && <ErrorPanel message={error} />}
       {!error && !trabajos && <LoadingPanel label="Cargando trabajos…" />}
@@ -53,6 +70,13 @@ export function Trabajos() {
             );
           })}
         </div>
+      )}
+
+      {modalAbierto && (
+        <NuevoTrabajoModal
+          onClose={() => setModalAbierto(false)}
+          onCreated={handleTrabajoCreado}
+        />
       )}
     </>
   );

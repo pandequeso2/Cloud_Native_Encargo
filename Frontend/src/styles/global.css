@@ -467,7 +467,8 @@ button {
 
 .form-field input[type='text'],
 .form-field input[type='number'],
-.form-field input[type='date'] {
+.form-field input[type='date'],
+.form-field select {
   border: 1px solid var(--line);
   padding: 0.55rem 0.7rem;
   font-size: 0.92rem;
