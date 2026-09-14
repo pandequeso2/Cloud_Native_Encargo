@@ -445,13 +445,11 @@ http://localhost:8095
 👥 Autores
 
 Proyecto desarrollado para la asignatura Cloud Native.
+Benjamin Araya
+Matias Miranda
+Vicente Garrido
 
 Repositorio:
 
 pandequeso2/Cloud_Native_Encargo
 
-📄 Licencia
-
-Este proyecto actualmente no especifica una licencia de código abierto.
-
-Si se desea reutilizar o distribuir el código, se recomienda definir una licencia apropiada en el repositorio.

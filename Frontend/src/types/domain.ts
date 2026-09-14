@@ -45,6 +45,7 @@ export interface Entrega {
   fechaEntrega: string;
   estado: string;
 }
+export type EstadoEntrega = 'PENDIENTE' | 'ENTREGADO' | 'EVALUADO' | 'ATRASADO';
 
 export interface Comentario {
   idComentario: number;
