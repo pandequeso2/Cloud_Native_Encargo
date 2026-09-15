@@ -74,6 +74,10 @@ security:
     tenant-id: ${ENTRA_TENANT_ID}
     issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
     audience: ${ENTRA_AUDIENCE}
+    roles-por-correo:
+      ben.arayag@duocuc.cl: Admin
+      vi.garridod@duocuc.cl: Profesor
+      mat.mirandag@duocuc.cl: Estudiante
 
 eureka:
   client:

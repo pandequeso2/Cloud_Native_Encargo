@@ -91,9 +91,13 @@ public class SecurityConfig {
         return "Estudiante";
     }
 
-    private CorsConfigurationSource corsConfigurationSource() {
+        private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.tudominio.cl"));
+        // ALLOWED_ORIGIN se setea en producción (docker-compose.prod.yml)
+        // con la URL real del frontend en AWS. Si no está seteada, cae en
+        // localhost:5173 para seguir funcionando igual en desarrollo local.
+        String allowedOrigin = System.getenv().getOrDefault("ALLOWED_ORIGIN", "http://localhost:5173");
+        config.setAllowedOriginPatterns(List.of(allowedOrigin, "http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
