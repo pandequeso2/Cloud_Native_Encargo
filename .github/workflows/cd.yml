@@ -43,14 +43,16 @@ jobs:
       - name: Compilar jar
         if: matrix.service.name != 'frontend'
         working-directory: ${{ matrix.service.path }}
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # Imprescindible para AWS Academy
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login en ECR
@@ -93,10 +95,8 @@ jobs:
             cd /home/ec2-user/app
             mv docker-compose.prod.yml docker-compose.yml
             
-            # Asegurar que AWS CLI esté disponible
             which aws || sudo dnf install -y awscli
             
-            # Autenticación ECR usando las credenciales del LabInstanceProfile del EC2
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
               
