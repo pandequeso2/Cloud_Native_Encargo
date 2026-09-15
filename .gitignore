@@ -1,1 +1,4 @@
 .env
+# Claves privadas SSH
+*.pem
+cloud_native_key.pem
