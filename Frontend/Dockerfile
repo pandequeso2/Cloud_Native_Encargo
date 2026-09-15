@@ -5,13 +5,16 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 
-# Argumentos opcionales para el build de produccion (AWS). Si no se pasan,
-# Vite simplemente no define estas variables y el codigo cae en sus
-# valores por defecto de localhost (ver authConfig.ts).
-ARG VITE_API_BASE_URL
+# Argumentos para el build de produccion
+ARG VITE_ENTRA_TENANT_ID
+ARG VITE_ENTRA_AUDIENCE
 ARG VITE_REDIRECT_URI
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_API_BASE_URL
+
+ENV VITE_ENTRA_TENANT_ID=$VITE_ENTRA_TENANT_ID
+ENV VITE_ENTRA_AUDIENCE=$VITE_ENTRA_AUDIENCE
 ENV VITE_REDIRECT_URI=$VITE_REDIRECT_URI
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
 

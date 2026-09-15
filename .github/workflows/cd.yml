@@ -64,8 +64,15 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           REPO: ${{ env.PROJECT_NAME }}-${{ matrix.service.name }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+          ENTRA_AUDIENCE: ${{ secrets.ENTRA_AUDIENCE }}
         run: |
-          docker build -t $REGISTRY/$REPO:latest -t $REGISTRY/$REPO:${{ github.sha }} .
+          docker build \
+            --build-arg VITE_ENTRA_TENANT_ID=$ENTRA_TENANT_ID \
+            --build-arg VITE_ENTRA_AUDIENCE=$ENTRA_AUDIENCE \
+            --build-arg VITE_REDIRECT_URI="http://localhost:3000" \
+            --build-arg VITE_API_BASE_URL="http://localhost:8095" \
+            -t $REGISTRY/$REPO:latest -t $REGISTRY/$REPO:${{ github.sha }} .
           docker push $REGISTRY/$REPO:latest
           docker push $REGISTRY/$REPO:${{ github.sha }}
 
