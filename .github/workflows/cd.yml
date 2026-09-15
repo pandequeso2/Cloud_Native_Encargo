@@ -50,6 +50,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # Imprescindible para AWS Academy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login en ECR
@@ -91,8 +92,14 @@ jobs:
           script: |
             cd /home/ec2-user/app
             mv docker-compose.prod.yml docker-compose.yml
+            
+            # Asegurar que AWS CLI esté disponible
+            which aws || sudo dnf install -y awscli
+            
+            # Autenticación ECR usando las credenciales del LabInstanceProfile del EC2
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+              
             docker compose pull
             docker compose up -d
             docker image prune -f

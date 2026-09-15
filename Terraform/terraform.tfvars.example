@@ -1,5 +1,5 @@
-key_pair_name    = "mi-key-pair"
-allowed_ssh_cidr = "200.123.45.67/32"
-db_password      = "una-contraseña-segura-aqui"
+key_pair_name    = "cloud_native_key"
+allowed_ssh_cidr = "200.104.25.127/32"
+db_password      = "BitacoraSegura2026"
 entra_tenant_id  = "551dc2ab-db79-43ed-97de-ec90a21f3e0c"
 entra_audience   = "cdde4875-2f04-4a9e-b27c-2e1ad93c9366"

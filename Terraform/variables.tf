@@ -41,7 +41,7 @@ variable "db_password" {
 variable "db_instance_class" {
   description = "Tamaño de la instancia RDS"
   type        = string
-  default     = "db.t3.micro"
+  default     = "db.t3.medium"
 }
 
 variable "entra_tenant_id" {

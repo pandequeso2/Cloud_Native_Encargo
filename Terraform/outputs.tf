@@ -7,7 +7,7 @@ output "api_gateway_url" {
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.mysql.address
+  value = aws_db_instance.default.address
 }
 
 output "ecr_repository_urls" {

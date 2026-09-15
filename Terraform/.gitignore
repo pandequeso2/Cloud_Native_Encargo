@@ -1,0 +1,24 @@
+# Archivos y carpetas generados por terraform init
+.terraform/
+.terraform.lock.hcl
+
+# Archivos de estado de Terraform (contienen credenciales en texto plano)
+*.tfstate
+*.tfstate.*
+terraform.tfstate
+terraform.tfstate.backup
+
+# Archivos de variables con datos sensibles
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Claves privadas SSH que hayas generado localmente
+*.pem
+
+# Archivos de log de errores
+crash.log
+crash.*.log
