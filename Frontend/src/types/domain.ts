@@ -23,6 +23,15 @@ export interface Integrante {
   idNota: number;
 }
 
+export interface Profesor {
+  idProfesor: number;
+  nombreProfesor: string;
+  apellidoProfesor: string;
+  rutCuerpo: number;
+  rutDv: string;
+  correoElectronico: string;
+}
+
 export type Disponibilidad = 'BAJA' | 'MEDIA' | 'ALTA';
 
 export type EstadoTrabajo = 'PENDIENTE' | 'ENTREGADO' | 'EVALUADO';

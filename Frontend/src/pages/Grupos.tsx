@@ -4,6 +4,7 @@ import { gruposApi } from '../api/services';
 import type { Grupo } from '../types/domain';
 import { EmptyPanel, ErrorPanel, LoadingPanel, StatusBadge } from '../components/AsyncState';
 import { NuevoGrupoModal } from '../components/NuevoGrupoModal';
+import { EditarGrupoModal } from '../components/EditarGrupoModal';
 import { useAuthInfo } from '../auth/useAuthInfo';
 
 export function Grupos() {
@@ -11,6 +12,7 @@ export function Grupos() {
   const [grupos, setGrupos] = useState<Grupo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null);
 
   useEffect(() => {
     gruposApi
@@ -22,6 +24,25 @@ export function Grupos() {
   const handleGrupoCreado = (nuevo: Grupo) => {
     setGrupos((prev) => (prev ? [...prev, nuevo] : [nuevo]));
     setModalAbierto(false);
+  };
+
+  const handleGrupoActualizado = (actualizado: Grupo) => {
+    setGrupos((prev) =>
+      prev ? prev.map((item) => (item.idGrupo === actualizado.idGrupo ? actualizado : item)) : [actualizado],
+    );
+    setGrupoEditando(null);
+  };
+
+  const handleGrupoEliminado = async (idGrupo: number) => {
+    const confirmado = window.confirm('¿Seguro que quieres eliminar este grupo?');
+    if (!confirmado) return;
+
+    try {
+      await gruposApi.eliminar(idGrupo);
+      setGrupos((prev) => prev?.filter((item) => item.idGrupo !== idGrupo) ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el grupo.');
+    }
   };
 
   return (
@@ -52,25 +73,49 @@ export function Grupos() {
       {grupos && grupos.length > 0 && (
         <div className="ledger">
           {grupos.map((grupo, index) => (
-            <Link key={grupo.idGrupo} to={`/grupos/${grupo.idGrupo}`} className="ledger__row">
-              <span className="ledger__index">{String(index + 1).padStart(2, '0')}</span>
-              <span>
-                <div className="ledger__title">{grupo.nombreGrupo}</div>
-                <div className="ledger__meta">
-                  cupo {grupo.capacidadMaxima} · creado {grupo.fechaCreacion}
-                </div>
-              </span>
-              <StatusBadge
-                kind={grupo.grupoLleno ? 'overdue' : 'confirmed'}
-                label={grupo.grupoLleno ? 'Cupo lleno' : 'Con cupo'}
-              />
-            </Link>
+            <div key={grupo.idGrupo} className="ledger__row">
+              <Link to={`/grupos/${grupo.idGrupo}`} className="ledger__row__link">
+                <span className="ledger__index">{String(index + 1).padStart(2, '0')}</span>
+                <span>
+                  <div className="ledger__title">{grupo.nombreGrupo}</div>
+                  <div className="ledger__meta">
+                    cupo {grupo.capacidadMaxima} · creado {grupo.fechaCreacion}
+                  </div>
+                </span>
+                <StatusBadge
+                  kind={grupo.grupoLleno ? 'overdue' : 'confirmed'}
+                  label={grupo.grupoLleno ? 'Cupo lleno' : 'Con cupo'}
+                />
+              </Link>
+              {auth?.hasRole('Admin') && (
+                <>
+                  <button type="button" className="btn-secondary" onClick={() => setGrupoEditando(grupo)}>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => handleGrupoEliminado(grupo.idGrupo)}
+                  >
+                    Eliminar
+                  </button>
+                </>
+              )}
+            </div>
           ))}
         </div>
       )}
 
       {modalAbierto && (
         <NuevoGrupoModal onClose={() => setModalAbierto(false)} onCreated={handleGrupoCreado} />
+      )}
+
+      {grupoEditando && (
+        <EditarGrupoModal
+          grupo={grupoEditando}
+          onClose={() => setGrupoEditando(null)}
+          onUpdated={handleGrupoActualizado}
+        />
       )}
     </>
   );

@@ -1,0 +1,105 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [Develop]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT_NAME: cloudnative-encargo
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: eureka-server, path: Backend/eureka-server }
+          - { name: gateway, path: Backend/gateway }
+          - { name: notas-service, path: Backend/notas_service }
+          - { name: asignaturas-service, path: Backend/asignaturas_service }
+          - { name: profesores-service, path: Backend/profesores_service }
+          - { name: grupos-service, path: Backend/grupos_service }
+          - { name: integrantes-service, path: Backend/integrantes_service }
+          - { name: roles-service, path: Backend/roles_service }
+          - { name: secciones-service, path: Backend/secciones_service }
+          - { name: trabajos-service, path: Backend/trabajos_service }
+          - { name: entregas-service, path: Backend/entregas_service }
+          - { name: comentarios-service, path: Backend/comentarios_service }
+          - { name: frontend, path: Frontend }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        if: matrix.service.name != 'frontend'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar jar
+        if: matrix.service.name != 'frontend'
+        working-directory: ${{ matrix.service.path }}
+        run: ./mvnw clean package -DskipTests
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login en ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y push de la imagen
+        working-directory: ${{ matrix.service.path }}
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          REPO: ${{ env.PROJECT_NAME }}-${{ matrix.service.name }}
+        run: |
+          docker build -t $REGISTRY/$REPO:latest -t $REGISTRY/$REPO:${{ github.sha }} .
+          docker push $REGISTRY/$REPO:latest
+          docker push $REGISTRY/$REPO:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copiar docker-compose.prod.yml al EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/home/ec2-user/app"
+
+      - name: Desplegar en el EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD
+          script: |
+            cd /home/ec2-user/app
+            mv docker-compose.prod.yml docker-compose.yml
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+              docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+        env:
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+          ENTRA_AUDIENCE: ${{ secrets.ENTRA_AUDIENCE }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

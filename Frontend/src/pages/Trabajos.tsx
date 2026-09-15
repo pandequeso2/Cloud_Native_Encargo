@@ -3,6 +3,7 @@ import { trabajosApi } from '../api/services';
 import type { EstadoTrabajo, Trabajo } from '../types/domain';
 import { EmptyPanel, ErrorPanel, LoadingPanel, StatusBadge } from '../components/AsyncState';
 import { NuevoTrabajoModal } from '../components/NuevoTrabajoModal';
+import { EditarTrabajoModal } from '../components/EditarTrabajoModal';
 import { useAuthInfo } from '../auth/useAuthInfo';
 
 const ESTADO_UI: Record<EstadoTrabajo, { label: string; kind: 'confirmed' | 'due' | 'overdue' }> = {
@@ -16,6 +17,7 @@ export function Trabajos() {
   const [trabajos, setTrabajos] = useState<Trabajo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [trabajoEditando, setTrabajoEditando] = useState<Trabajo | null>(null);
 
   useEffect(() => {
     trabajosApi
@@ -27,6 +29,25 @@ export function Trabajos() {
   const handleTrabajoCreado = (nuevo: Trabajo) => {
     setTrabajos((prev) => (prev ? [...prev, nuevo] : [nuevo]));
     setModalAbierto(false);
+  };
+
+  const handleTrabajoActualizado = (actualizado: Trabajo) => {
+    setTrabajos((prev) =>
+      prev ? prev.map((item) => (item.idTrabajo === actualizado.idTrabajo ? actualizado : item)) : [actualizado],
+    );
+    setTrabajoEditando(null);
+  };
+
+  const handleTrabajoEliminado = async (idTrabajo: number) => {
+    const confirmado = window.confirm('¿Seguro que quieres eliminar este trabajo?');
+    if (!confirmado) return;
+
+    try {
+      await trabajosApi.eliminar(idTrabajo);
+      setTrabajos((prev) => prev?.filter((item) => item.idTrabajo !== idTrabajo) ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el trabajo.');
+    }
   };
 
   return (
@@ -66,6 +87,20 @@ export function Trabajos() {
                   </div>
                 </span>
                 <StatusBadge kind={estado.kind} label={estado.label} />
+                {auth?.hasRole('Admin') && (
+                  <>
+                    <button type="button" className="btn-secondary" onClick={() => setTrabajoEditando(trabajo)}>
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => handleTrabajoEliminado(trabajo.idTrabajo)}
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
@@ -76,6 +111,14 @@ export function Trabajos() {
         <NuevoTrabajoModal
           onClose={() => setModalAbierto(false)}
           onCreated={handleTrabajoCreado}
+        />
+      )}
+
+      {trabajoEditando && (
+        <EditarTrabajoModal
+          trabajo={trabajoEditando}
+          onClose={() => setTrabajoEditando(null)}
+          onUpdated={handleTrabajoActualizado}
         />
       )}
     </>
