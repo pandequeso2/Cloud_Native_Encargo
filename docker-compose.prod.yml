@@ -1,5 +1,6 @@
-services:
+version: '3.8'
 
+services:
   eureka-server:
     image: ${ECR_REGISTRY}/cloudnative-encargo-eureka-server:latest
     container_name: eureka-server
@@ -12,6 +13,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-notas-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -20,6 +23,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-asignaturas-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -28,6 +33,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-profesores-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -36,6 +43,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-grupos-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -44,6 +53,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-integrantes-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -52,6 +63,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-roles-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -60,6 +73,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-secciones-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -68,6 +83,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-trabajos-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -76,6 +93,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-entregas-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]
@@ -84,6 +103,8 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-comentarios-service:latest
     environment:
       DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
     networks: [backend]

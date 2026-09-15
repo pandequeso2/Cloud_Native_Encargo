@@ -93,12 +93,20 @@ jobs:
           envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD
           script: |
             cd /home/ec2-user/app
+            cat <<EOF > .env
+            ECR_REGISTRY=${ECR_REGISTRY}
+            ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
+            ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
+            DB_HOST=${DB_HOST}
+            DB_USERNAME=${DB_USERNAME}
+            DB_PASSWORD=${DB_PASSWORD}
+            EOF
             mv docker-compose.prod.yml docker-compose.yml
             
             which aws || sudo dnf install -y awscli
             
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
-              docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+              docker login --username AWS --password-stdin ${ECR_REGISTRY}
               
             docker compose pull
             docker compose up -d
