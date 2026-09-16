@@ -111,22 +111,22 @@ services:
 
   gateway:
     image: ${ECR_REGISTRY}/cloudnative-encargo-gateway:latest
-    environment:
-      EUREKA_HOST: eureka-server
-      NOTAS_HOST: notas-service
-      ASIGNATURAS_HOST: asignaturas-service
-      PROFESORES_HOST: profesores-service
-      GRUPOS_HOST: grupos-service
-      INTEGRANTES_HOST: integrantes-service
-      ROLES_HOST: roles-service
-      SECCIONES_HOST: secciones-service
-      TRABAJOS_HOST: trabajos-service
-      ENTREGAS_HOST: entregas-service
-      COMENTARIOS_HOST: comentarios-service
-      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID}
-      ENTRA_AUDIENCE: ${ENTRA_AUDIENCE}
     ports:
       - "8095:8095"
+    environment:
+      - NOTAS_HOST=notas-service
+      - ASIGNATURAS_HOST=asignaturas-service
+      - PROFESORES_HOST=profesores-service
+      - GRUPOS_HOST=grupos-service
+      - INTEGRANTES_HOST=integrantes-service
+      - ROLES_HOST=roles-service
+      - SECCIONES_HOST=secciones-service
+      - TRABAJOS_HOST=trabajos-service
+      - ENTREGAS_HOST=entregas-service
+      - COMENTARIOS_HOST=comentarios-service
+      - EUREKA_HOST=eureka-server
+      - ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
+      - ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
     depends_on: [eureka-server]
     networks: [backend]
 
