@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.server.resource.authentication.Reacti
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.CorsUtils;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
@@ -40,6 +41,8 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchanges -> exchanges
+                        .matchers(CorsUtils::isPreFlightRequest).permitAll()
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers(PUBLIC_PATHS).permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/grupos/**").hasRole("Admin")
                         .pathMatchers(HttpMethod.PUT, "/api/v1/grupos/**").hasRole("Admin")
@@ -91,13 +94,17 @@ public class SecurityConfig {
         return "Estudiante";
     }
 
-        private CorsConfigurationSource corsConfigurationSource() {
+    private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // ALLOWED_ORIGIN se setea en producción (docker-compose.prod.yml)
-        // con la URL real del frontend en AWS. Si no está seteada, cae en
-        // localhost:5173 para seguir funcionando igual en desarrollo local.
-        String allowedOrigin = System.getenv().getOrDefault("ALLOWED_ORIGIN", "http://localhost:5173");
-        config.setAllowedOriginPatterns(List.of(allowedOrigin, "http://localhost:5173"));
+        
+        String allowedOrigin = System.getenv().getOrDefault("ALLOWED_ORIGIN", "http://localhost:3000");
+        
+        config.setAllowedOriginPatterns(List.of(
+                allowedOrigin,
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://54.235.56.150"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
