@@ -22,3 +22,6 @@ override.tf.json
 # Archivos de log de errores
 crash.log
 crash.*.log
+
+#llaves
+clave_ssh.txt

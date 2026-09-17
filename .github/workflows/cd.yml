@@ -75,55 +75,53 @@ jobs:
             -t $REGISTRY/$REPO:latest -t $REGISTRY/$REPO:${{ github.sha }} .
           docker push $REGISTRY/$REPO:latest
           docker push $REGISTRY/$REPO:${{ github.sha }}
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Copiar docker-compose.prod.yml al EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/home/ubuntu/app"
+    - name: Copiar docker-compose.prod.yml al EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: "docker-compose.prod.yml"
+        target: "/home/ubuntu" # Subimos el archivo a un lugar seguro primero
 
-      - name: Desplegar en el EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD
-          script: |
-            cd /home/ubuntu/app
-            cat <<EOF > .env
-            ECR_REGISTRY=${ECR_REGISTRY}
-            ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
-            ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
-            DB_HOST=${DB_HOST}
-            DB_USERNAME=${DB_USERNAME}
-            DB_PASSWORD=${DB_PASSWORD}
-            EOF
-            mv docker-compose.prod.yml docker-compose.yml
+    - name: Desplegar en el EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD
+        script: |
+          # Asegurar que el directorio de la app existe y nos pertenece a nosotros
+          sudo mkdir -p /home/ubuntu/app
+          sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+          
+          # Mover el archivo que acabamos de subir
+          mv /home/ubuntu/docker-compose.prod.yml /home/ubuntu/app/docker-compose.yml
+          
+          cd /home/ubuntu/app
+          cat <<EOF > .env
+          ECR_REGISTRY=${ECR_REGISTRY}
+          ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
+          ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
+          DB_HOST=${DB_HOST}
+          DB_USERNAME=${DB_USERNAME}
+          DB_PASSWORD=${DB_PASSWORD}
+          EOF
+          
+          # Instalar AWS CLI si no existe
+          which aws || (sudo apt-get update && sudo apt-get install -y awscli)
+          
+          # Conectar a ECR y levantar contenedores
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+            sudo docker login --username AWS --password-stdin ${ECR_REGISTRY}
             
-            # Instalar AWS CLI usando el gestor de paquetes de Ubuntu
-            which aws || (sudo apt-get update && sudo apt-get install -y awscli)
-            
-            # Conectar a ECR y levantar contenedores con sudo
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
-              sudo docker login --username AWS --password-stdin ${ECR_REGISTRY}
-              
-            sudo docker compose pull
-            sudo docker compose up -d
-            sudo docker image prune -f
-        env:
-          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
-          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
-          ENTRA_AUDIENCE: ${{ secrets.ENTRA_AUDIENCE }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          sudo docker compose pull
+          sudo docker compose up -d
+          sudo docker image prune -f
