@@ -18,8 +18,21 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
 
+# ... (Tu etapa 1 de Vite se mantiene exactamente igual)
+
 # Etapa 2: servir los archivos estaticos con Nginx
 FROM nginx:alpine
+
+# Generar certificado autofirmado para habilitar HTTPS
+RUN apk add --no-cache openssl
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/C=CL/ST=RM/L=Santiago/O=DuocUC/OU=IT/CN=18.235.20.83"
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+
+# Exponemos ambos puertos
+EXPOSE 80 443
+

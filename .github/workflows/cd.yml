@@ -160,7 +160,7 @@ jobs:
             
             sudo docker pull ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
             sudo docker rm -f frontend || true
-            sudo docker run -d --name frontend -p 80:80 ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
+            sudo docker run -d --name frontend -p 80:80 -p 443:443 ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
             
             sudo docker image prune -f
         env:
