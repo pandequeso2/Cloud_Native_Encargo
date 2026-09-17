@@ -148,3 +148,5 @@ jobs:
           sudo docker run -d --name frontend -p 80:80 ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
           
           sudo docker image prune -f
+      env:
+        ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
