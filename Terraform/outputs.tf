@@ -18,8 +18,8 @@ output "api_gateway_invoke_url" {
   value       = aws_apigatewayv2_stage.default_stage.invoke_url
 }
 
+# Output para extraer la llave SSH de forma segura
 output "ec2_ssh_private_key" {
-  description = "Clave privada SSH para acceder a las instancias EC2."
-  value       = tls_private_key.deploy_key.private_key_pem
-  sensitive   = true
+  value     = tls_private_key.deploy_key.private_key_pem
+  sensitive = true
 }

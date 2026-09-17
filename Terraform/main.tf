@@ -85,6 +85,8 @@ resource "aws_security_group" "frontend_sg" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 # Obtener AMI de Ubuntu 22.04 LTS
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -98,9 +100,9 @@ data "aws_ami" "ubuntu" {
 
 # Instancia Backend (Microservicios + Spring Gateway)
 resource "aws_instance" "backend" {
-  ami                  = data.aws_ami.ubuntu.id
-  instance_type        = var.backend_instance_type
-  key_name             = aws_key_pair.deploy_key.key_name
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.backend_instance_type
+  key_name               = aws_key_pair.deploy_key.key_name
   vpc_security_group_ids = [aws_security_group.backend_sg.id]
 
   root_block_device {
@@ -133,9 +135,9 @@ resource "aws_instance" "backend" {
               mkdir -p /home/ubuntu/app
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
 
-              # Escribir el archivo .env
+              # Escribir el archivo .env preparatorio
               cat <<EOT > /home/ubuntu/app/.env
-              ECR_REGISTRY=827920207598.dkr.ecr.us-east-1.amazonaws.com
+              ECR_REGISTRY=${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com
               ENTRA_TENANT_ID=120aafaf-ea47-4c03-b1b6-68ef7c7c9dce
               ENTRA_AUDIENCE=aec497bb-c720-40cc-9e4f-87f811226d6f
               DB_HOST=${aws_db_instance.mysql_db.address} 
@@ -145,7 +147,7 @@ resource "aws_instance" "backend" {
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
               cd /home/ubuntu/app
-              docker compose up -d
+              # El despliegue de los contenedores lo realizará GitHub Actions mediante SSH
               EOF
 
   tags = {
@@ -160,9 +162,9 @@ resource "aws_eip_association" "backend_eip_assoc" {
 
 # Instancia Frontend (Nginx SPA)
 resource "aws_instance" "frontend" {
-  ami                  = data.aws_ami.ubuntu.id
-  instance_type        = var.frontend_instance_type
-  key_name             = aws_key_pair.deploy_key.key_name
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.frontend_instance_type
+  key_name               = aws_key_pair.deploy_key.key_name
   vpc_security_group_ids = [aws_security_group.frontend_sg.id]
 
   root_block_device {
@@ -202,7 +204,6 @@ resource "aws_instance" "frontend" {
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
               cd /home/ubuntu/app
-              docker compose up -d frontend
               EOF
 
   tags = {
