@@ -92,16 +92,14 @@ public class SecurityConfig {
         return "Estudiante";
     }
 
-    private CorsConfigurationSource corsConfigurationSource() {
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         
-        String allowedOrigin = System.getenv().getOrDefault("ALLOWED_ORIGIN", "http://localhost:3000");
-        
         config.setAllowedOriginPatterns(List.of(
-                allowedOrigin,
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "http://54.235.56.150"
+                "http://18.235.20.83"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

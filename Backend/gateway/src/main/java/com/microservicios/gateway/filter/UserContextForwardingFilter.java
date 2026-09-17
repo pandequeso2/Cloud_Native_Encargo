@@ -9,16 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-/**
- * Una vez que el JWT fue validado por el Gateway (BFF), este filtro reenvía
- * la identidad del usuario hacia los microservicios internos mediante
- * headers. Los microservicios NO vuelven a validar el JWT: confían en la red
- * interna y en que solo el Gateway puede llegar a ellos.
- *
- * Si en el futuro los microservicios quedan expuestos directamente (sin
- * pasar por el Gateway), esto deja de ser seguro y cada uno debería validar
- * el JWT también.
- */
 @Component
 public class UserContextForwardingFilter implements GlobalFilter, Ordered {
 

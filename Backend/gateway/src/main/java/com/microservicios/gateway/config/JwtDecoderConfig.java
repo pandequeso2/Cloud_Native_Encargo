@@ -56,4 +56,4 @@ public class JwtDecoderConfig {
             return OAuth2TokenValidatorResult.failure(error);
         }
     }
-}
+}   
