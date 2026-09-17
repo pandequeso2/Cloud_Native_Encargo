@@ -125,3 +125,26 @@ jobs:
           sudo docker compose pull
           sudo docker compose up -d
           sudo docker image prune -f
+
+
+    - name: Desplegar en la instancia Frontend
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.FRONTEND_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        envs: AWS_REGION,ECR_REGISTRY
+        script: |
+          # Instalar AWS CLI si no existe
+          which aws || (sudo apt-get update && sudo apt-get install -y awscli)
+          
+          # Conectar a ECR
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+            sudo docker login --username AWS --password-stdin ${ECR_REGISTRY}
+          
+          # Descargar y levantar el frontend
+          sudo docker pull ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
+          sudo docker rm -f frontend || true
+          sudo docker run -d --name frontend -p 80:80 ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
+          
+          sudo docker image prune -f
