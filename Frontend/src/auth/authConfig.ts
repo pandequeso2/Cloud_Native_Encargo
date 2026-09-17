@@ -6,9 +6,10 @@ import { LogLevel } from '@azure/msal-browser';
 // estos IDs quedan visibles en el repositorio de GitHub. No son secretos
 // como una contraseña (un tenant/client ID no permite autenticarse por sí
 // solo), pero sí identifican públicamente el tenant de Entra ID del equipo.
-const clientId = 'be1f94f2-51ba-4a74-ab8d-b258e2123e6e';
-const tenantId = '551dc2ab-db79-43ed-97de-ec90a21f3e0c';
-const apiClientId = 'cdde4875-2f04-4a9e-b27c-2e1ad93c9366';
+// Valores actualizados a tu entorno CloudNativeApi
+const clientId = '47099009-530d-4953-9c13-8453c7369262'; // ID de bitacora-frontend-spa
+const tenantId = '120aafaf-ea47-4c03-b1b6-68ef7c7c9dce'; // ID de tu Tenant (Directorio)
+const apiClientId = 'aec497bb-c720-40cc-9e4f-87f811226d6f'; // ID de bitacora-backend-api
 // Detecta automáticamente en qué IP o dominio está corriendo la página web
 const redirectUri = window.location.origin;
 
