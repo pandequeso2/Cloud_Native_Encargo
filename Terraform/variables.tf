@@ -28,12 +28,6 @@ variable "frontend_instance_type" {
   description = "Tipo de instancia para la SPA Frontend."
 }
 
-variable "azure_tenant_id" {
-  type        = string
-  default     = "551dc2ab-db79-43ed-97de-ec90a21f3e0c"
-  description = "Tenant ID de Microsoft Entra ID."
-}
-
 variable "backend_gateway_port" {
   type        = number
   default     = 8095

@@ -23,13 +23,3 @@ output "ec2_ssh_private_key" {
   value       = tls_private_key.deploy_key.private_key_pem
   sensitive   = true
 }
-
-output "azure_backend_client_id" {
-  description = "ID de cliente del Backend registrado en Entra ID."
-  value       = azuread_application.backend.client_id
-}
-
-output "azure_frontend_client_id" {
-  description = "ID de cliente del Frontend registrado en Entra ID."
-  value       = azuread_application.frontend.client_id
-}

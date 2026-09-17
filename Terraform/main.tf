@@ -136,9 +136,9 @@ resource "aws_instance" "backend" {
               # Escribir el archivo .env
               cat <<EOT > /home/ubuntu/app/.env
               ECR_REGISTRY=827920207598.dkr.ecr.us-east-1.amazonaws.com
-              ENTRA_TENANT_ID=${var.azure_tenant_id}
-              ENTRA_AUDIENCE=${azuread_application.backend.client_id}
-              DB_HOST=${var.db_host}
+              ENTRA_TENANT_ID=120aafaf-ea47-4c03-b1b6-68ef7c7c9dce
+              ENTRA_AUDIENCE=aec497bb-c720-40cc-9e4f-87f811226d6f
+              DB_HOST=${aws_db_instance.mysql_db.address} 
               DB_USERNAME=${var.db_username}
               DB_PASSWORD=${var.db_password}
               EOT
@@ -195,8 +195,8 @@ resource "aws_instance" "frontend" {
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
 
               cat <<EOT > /home/ubuntu/app/frontend/.env
-              VITE_ENTRA_CLIENT_ID=${azuread_application.frontend.client_id}
-              VITE_ENTRA_TENANT_ID=${var.azure_tenant_id}
+              VITE_ENTRA_CLIENT_ID=47099009-530d-4953-9c13-8453c7369262
+              VITE_ENTRA_TENANT_ID=120aafaf-ea47-4c03-b1b6-68ef7c7c9dce
               VITE_API_GATEWAY_URL=http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}
               EOT
 

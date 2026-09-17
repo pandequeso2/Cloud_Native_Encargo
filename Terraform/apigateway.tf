@@ -17,8 +17,8 @@ resource "aws_apigatewayv2_authorizer" "entra_jwt" {
   name             = "entra-id-jwt-authorizer"
 
   jwt_configuration {
-    audience = [azuread_application.backend.client_id]
-    issuer   = "https://login.microsoftonline.com/${var.azure_tenant_id}/v2.0"
+    audience = ["aec497bb-c720-40cc-9e4f-87f811226d6f"]
+    issuer = "https://login.microsoftonline.com/120aafaf-ea47-4c03-b1b6-68ef7c7c9dce/v2.0"
   }
 }
 
