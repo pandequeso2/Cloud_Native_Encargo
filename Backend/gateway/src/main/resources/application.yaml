@@ -88,7 +88,7 @@
   security:
     entra-id:
       tenant-id: ${ENTRA_TENANT_ID}
-      issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+      issuer-uri: https://sts.windows.net/${ENTRA_TENANT_ID}/
       audience: ${ENTRA_AUDIENCE}
       roles-por-correo:
         ben.arayag@duocuc.cl: Admin

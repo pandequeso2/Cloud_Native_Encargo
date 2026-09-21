@@ -16,9 +16,13 @@ const apiClientId = 'aec497bb-c720-40cc-9e4f-87f811226d6f'; // ID de bitacora-ba
 const redirectUri = window.location.origin;
 
 // Asegúrate de poner la IP pública de tu instancia BACKEND (la del Gateway) aquí
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL && !import.meta.env.VITE_API_BASE_URL.includes("localhost") 
-    ? import.meta.env.VITE_API_BASE_URL 
-    : 'http://98.95.159.57:8095'; 
+//const apiBaseUrl = import.meta.env.VITE_API_BASE_URL && !import.meta.env.VITE_API_BASE_URL.includes("localhost") 
+//    ? import.meta.env.VITE_API_BASE_URL 
+//    : 'http://98.95.159.57:8095'; 
+
+// ✅ CÓDIGO NUEVO:
+// Usa la variable del .env o cae a localhost si no está definida
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8095';
 
 export const msalConfig: Configuration = {
   auth: {

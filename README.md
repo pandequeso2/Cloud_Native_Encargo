@@ -422,6 +422,18 @@ El sistema está preparado para ejecutarse utilizando contenedores Docker.
 
 Si ya tienes Docker instalado y configuradas las variables de entorno necesarias:
 
+Paso 1: ejecutar 
+Crear variables de entorno: 
+ENTRA_TENANT_ID=120aafaf-ea47-4c03-b1b6-68ef7c7c9dce
+ENTRA_AUDIENCE=api://aec497bb-c720-40cc-9e4f-87f811226d6f
+
+Paso 2: crear jars's en backend
+"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
+
+paso 3, en la terminal principal
+docker compose up -d --build
+
+
 git clone https://github.com/pandequeso2/Cloud_Native_Encargo.git
 
 cd Cloud_Native_Encargo

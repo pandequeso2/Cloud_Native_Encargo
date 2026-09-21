@@ -7,30 +7,36 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.*;
 
 @Configuration
 public class JwtDecoderConfig {
 
-    @Value("${security.entra-id.issuer-uri}")
-    private String issuerUri;
+    @Value("${security.entra-id.tenant-id}")
+    private String tenantId;
 
     @Value("${security.entra-id.audience}")
     private String audience;
 
     @Bean
     public ReactiveJwtDecoder jwtDecoder() {
+        // 1. Apuntamos directamente a las llaves públicas de Microsoft en login.microsoftonline.com
+        String jwkSetUri = "https://login.microsoftonline.com/common/discovery/v2.0/keys";
+        
         NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder
-                .withIssuerLocation(issuerUri)
+                .withJwkSetUri(jwkSetUri)
                 .build();
 
-        OAuth2TokenValidator<Jwt> defaultValidators = JwtValidators.createDefaultWithIssuer(issuerUri);
+        // 2. Validamos explícitamente el emisor sts.windows.net que envía Entra ID v1
+        String expectedIssuer = "https://sts.windows.net/" + tenantId + "/";
+        OAuth2TokenValidator<Jwt> issuerValidator = new JwtIssuerValidator(expectedIssuer);
         OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(audience);
 
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(defaultValidators, audienceValidator));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefault(),
+                issuerValidator,
+                audienceValidator
+        ));
 
         return decoder;
     }
@@ -45,9 +51,17 @@ public class JwtDecoderConfig {
 
         @Override
         public OAuth2TokenValidatorResult validate(Jwt jwt) {
-            if (jwt.getAudience() != null && jwt.getAudience().contains(expectedAudience)) {
-                return OAuth2TokenValidatorResult.success();
+            if (jwt.getAudience() != null) {
+                boolean matches = jwt.getAudience().stream().anyMatch(aud -> 
+                    aud.equals(expectedAudience) || 
+                    aud.replace("api://", "").equals(expectedAudience.replace("api://", ""))
+                );
+                
+                if (matches) {
+                    return OAuth2TokenValidatorResult.success();
+                }
             }
+            
             OAuth2Error error = new OAuth2Error(
                     "invalid_token",
                     "El token no contiene el audience esperado: " + expectedAudience,
@@ -56,4 +70,4 @@ public class JwtDecoderConfig {
             return OAuth2TokenValidatorResult.failure(error);
         }
     }
-}   
+}
