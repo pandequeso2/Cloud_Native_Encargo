@@ -243,19 +243,19 @@ export function RabbitMQDashboard() {
           <div className="button-group">
             <button
               className="btn btn--info"
-              onClick={() => handleSendLog('INFO', 'Usuario inició sesión en el sistema')}
+              onClick={() => handleSendLog('INFO', 'Hola, este es un log de prueba INFO para monitoreo del sistema')}
             >
               Enviar Log INFO
             </button>
             <button
               className="btn btn--warning"
-              onClick={() => handleSendLog('WARNING', 'Uso de CPU del servidor superó el 85%')}
+              onClick={() => handleSendLog('WARNING', 'Este es un log de advertencia WARNING: Se alcanzó el 80% de uso de memoria')}
             >
               Enviar Log WARNING
             </button>
             <button
               className="btn btn--error"
-              onClick={() => handleSendLog('ERROR', 'Fallo crítico: No se pudo conectar a MySQL')}
+              onClick={() => handleSendLog('ERROR', 'Este es un Error simulado: No se pudo procesar la orden de entrega')}
             >
               Enviar Log ERROR (Alerta)
             </button>
@@ -274,10 +274,10 @@ export function RabbitMQDashboard() {
             </button>
           </div>
 
-          <h3>Terminal de Consola de Logs:</h3>
+          <h3>Terminal de Consola de Mensajes:</h3>
           <div className="log-console">
             {logs.length === 0 ? (
-              <span className="log-placeholder">Esperando envíos de logs...</span>
+              <span className="log-placeholder">Esperando envíos de las colas de mensajes...</span>
             ) : (
               logs.map((l) => (
                 <div key={l.id} className={`log-line log-line--${l.level.toLowerCase()}`}>
@@ -307,20 +307,20 @@ export function RabbitMQDashboard() {
 
           <div className="button-group">
             <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Juan Pérez')}>
-              Enviar Entrega Juan Pérez
+              Enviar Entrega Carlos Ramirez
             </button>
             <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante María García')}>
-              Enviar Entrega María García
+              Enviar Entrega Valentina Soto
             </button>
             <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Carlos López')}>
-              Enviar Entrega Carlos López
+              Enviar Entrega Andrés Muñoz 
             </button>
           </div>
 
           <h3>Historial de Órdenes / Entregas:</h3>
           <div className="orders-table-wrapper">
             {orders.length === 0 ? (
-              <p className="empty-msg">No hay órdenes procesadas aún.</p>
+              <p className="empty-msg">No hay órdenes procesadas aún....</p>
             ) : (
               <table className="custom-table">
                 <thead>
@@ -363,13 +363,13 @@ export function RabbitMQDashboard() {
       <div className="rabbitmq-card margin-top-lg">
         <h2>3. Gestión Programática de Recursos (RabbitAdmin)</h2>
         <p className="card-desc">
-          Permite crear y gestionar colas, exchanges y bindings dinámicamente en tiempo de ejecución sin reiniciar la aplicación.
+          Permite crear y gestionar colas de mensajes, exchanges y bindings dinámicamente en tiempo de ejecución sin reiniciar la aplicación.
         </p>
 
         <div className="admin-grid">
           {/* Create Queue */}
           <div className="admin-box">
-            <h4>Crear Cola Dinámica</h4>
+            <h4>Crear Cola de mensajes dinamica</h4>
             <div className="form-inline">
               <input
                 type="text"
@@ -379,7 +379,7 @@ export function RabbitMQDashboard() {
                 className="input-field"
               />
               <button className="btn btn--primary" onClick={handleCreateQueue}>
-                Crear Cola
+                Crear Cola de mensajes
               </button>
             </div>
           </div>
