@@ -84,6 +84,11 @@
             predicates:
               - Path=/api/v1/comentarios/**
 
+          - id: rabbitmq
+            uri: http://${RABBITMQ_SERVICE_HOST:localhost}:8093
+            predicates:
+              - Path=/api/v1/rabbitmq/**
+
   # Configuración del IDaaS (Microsoft Entra ID)
   security:
     entra-id:
@@ -130,3 +135,5 @@
           url: /api/v1/entregas/v3/api-docs
         - name: comentarios
           url: /api/v1/comentarios/v3/api-docs
+        - name: rabbitmq
+          url: /api/v1/rabbitmq/v3/api-docs

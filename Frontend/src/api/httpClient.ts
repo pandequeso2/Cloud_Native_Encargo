@@ -17,25 +17,28 @@ export const httpClient = axios.create({ baseURL: API_BASE_URL });
  * autenticado y repite la acción normalmente.
  */
 httpClient.interceptors.request.use(async (config) => {
-  const account = msalInstance.getActiveAccount();
+  let account = msalInstance.getActiveAccount();
   if (!account) {
-    throw new Error('No hay una sesión activa. Inicia sesión antes de llamar al backend.');
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      account = accounts[0];
+      msalInstance.setActiveAccount(account);
+    }
   }
 
-  try {
-    const result = await msalInstance.acquireTokenSilent({
-      ...apiRequest,
-      account,
-    });
-    config.headers.Authorization = `Bearer ${result.accessToken}`;
-  } catch (error) {
-    if (error instanceof InteractionRequiredAuthError) {
-      await msalInstance.acquireTokenRedirect(apiRequest);
-      // La línea siguiente no debería alcanzarse: el navegador ya está
-      // navegando hacia Entra ID en este punto.
-      throw new Error('Redirigiendo para renovar la sesión…');
+  if (account) {
+    try {
+      const result = await msalInstance.acquireTokenSilent({
+        ...apiRequest,
+        account,
+      });
+      config.headers.Authorization = `Bearer ${result.accessToken}`;
+    } catch (error) {
+      if (error instanceof InteractionRequiredAuthError) {
+        await msalInstance.acquireTokenRedirect(apiRequest);
+        throw new Error('Redirigiendo para renovar la sesión…');
+      }
     }
-    throw error;
   }
 
   return config;

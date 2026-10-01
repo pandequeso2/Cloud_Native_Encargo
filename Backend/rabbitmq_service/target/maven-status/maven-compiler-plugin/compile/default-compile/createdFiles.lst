@@ -1,0 +1,13 @@
+cl\duoc\rabbitmq\consumer\OrderConsumer.class
+cl\duoc\rabbitmq\controller\RabbitAdminController.class
+cl\duoc\rabbitmq\config\RabbitMQConfig.class
+cl\duoc\rabbitmq\controller\LogProducerController$LogRequest.class
+cl\duoc\rabbitmq\config\RabbitAdminConfig.class
+cl\duoc\rabbitmq\controller\LogProducerController.class
+cl\duoc\rabbitmq\controller\ListenerController.class
+cl\duoc\rabbitmq\controller\OrderController.class
+cl\duoc\rabbitmq\config\RabbitListenerConfig.class
+cl\duoc\rabbitmq\consumer\LogConsumer.class
+cl\duoc\rabbitmq\RabbitMQServiceApplication.class
+cl\duoc\rabbitmq\service\ListenerManagementService.class
+cl\duoc\rabbitmq\service\RabbitResourceManager.class
