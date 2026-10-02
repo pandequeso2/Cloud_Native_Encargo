@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/integrantes', label: 'Integrantes' },
   { to: '/trabajos', label: 'Trabajos' },
   { to: '/entregas', label: 'Entregas' },
+  { to: '/rabbitmq', label: 'RabbitMQ & DLQ' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

@@ -2,7 +2,7 @@ name: Deploy to AWS
 
 on:
   push:
-    branches: [Develop]
+    branches: [Develop, Feature/local]
   workflow_dispatch:
 
 env:
@@ -27,6 +27,7 @@ jobs:
           - { name: trabajos-service, path: Backend/trabajos_service }
           - { name: entregas-service, path: Backend/entregas_service }
           - { name: comentarios-service, path: Backend/comentarios_service }
+          - { name: rabbitmq-service, path: Backend/rabbitmq_service }
           - { name: frontend, path: Frontend }
 
     steps:
@@ -97,7 +98,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
+          envs: AWS_REGION,ECR_REGISTRY,ENTRA_TENANT_ID,ENTRA_AUDIENCE,DB_HOST,DB_USERNAME,DB_PASSWORD,RABBITMQ_USER,RABBITMQ_PASSWORD,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN
           script: |
             set -e
             
@@ -113,6 +114,8 @@ jobs:
             DB_HOST=${DB_HOST}
             DB_USERNAME=${DB_USERNAME}
             DB_PASSWORD=${DB_PASSWORD}
+            RABBITMQ_USER=${RABBITMQ_USER:-admin}
+            RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
             EOF
             
             which aws || (sudo apt-get update && sudo apt-get install -y awscli)
@@ -135,6 +138,8 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}

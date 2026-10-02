@@ -206,6 +206,43 @@ services:
     networks:
       - backend
 
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP Protocol Port
+      - "15672:15672" # Management UI Port
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  rabbitmq-service:
+    build: ./Backend/rabbitmq_service
+    container_name: rabbitmq-service
+    environment:
+      EUREKA_HOST: eureka-server
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8093:8093"
+    networks:
+      - backend
+
   gateway:
     build: ./Backend/gateway
     container_name: gateway
@@ -221,6 +258,7 @@ services:
       TRABAJOS_HOST: trabajos-service
       ENTREGAS_HOST: entregas-service
       COMENTARIOS_HOST: comentarios-service
+      RABBITMQ_SERVICE_HOST: rabbitmq-service
       ENTRA_TENANT_ID: ${ENTRA_TENANT_ID}
       ENTRA_AUDIENCE: ${ENTRA_AUDIENCE}
     depends_on:
@@ -251,3 +289,4 @@ networks:
 
 volumes:
   mysql_data:
+  rabbitmq_data:

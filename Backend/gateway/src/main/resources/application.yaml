@@ -84,11 +84,16 @@
             predicates:
               - Path=/api/v1/comentarios/**
 
+          - id: rabbitmq
+            uri: http://${RABBITMQ_SERVICE_HOST:localhost}:8093
+            predicates:
+              - Path=/api/v1/rabbitmq/**
+
   # Configuración del IDaaS (Microsoft Entra ID)
   security:
     entra-id:
       tenant-id: ${ENTRA_TENANT_ID}
-      issuer-uri: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+      issuer-uri: https://sts.windows.net/${ENTRA_TENANT_ID}/
       audience: ${ENTRA_AUDIENCE}
       roles-por-correo:
         ben.arayag@duocuc.cl: Admin
@@ -130,3 +135,5 @@
           url: /api/v1/entregas/v3/api-docs
         - name: comentarios
           url: /api/v1/comentarios/v3/api-docs
+        - name: rabbitmq
+          url: /api/v1/rabbitmq/v3/api-docs

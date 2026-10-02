@@ -109,6 +109,43 @@ services:
     depends_on: [eureka-server]
     networks: [backend]
 
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  rabbitmq-service:
+    image: ${ECR_REGISTRY}/cloudnative-encargo-rabbitmq-service:latest
+    container_name: rabbitmq-service
+    environment:
+      EUREKA_HOST: eureka-server
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-admin123}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    ports:
+      - "8093:8093"
+    networks:
+      - backend
+
   gateway:
     image: ${ECR_REGISTRY}/cloudnative-encargo-gateway:latest
     ports:
@@ -124,6 +161,7 @@ services:
       - TRABAJOS_HOST=trabajos-service
       - ENTREGAS_HOST=entregas-service
       - COMENTARIOS_HOST=comentarios-service
+      - RABBITMQ_SERVICE_HOST=rabbitmq-service
       - EUREKA_HOST=eureka-server
       - ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
       - ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
@@ -140,3 +178,6 @@ services:
 networks:
   backend:
     driver: bridge
+
+volumes:
+  rabbitmq_data:
