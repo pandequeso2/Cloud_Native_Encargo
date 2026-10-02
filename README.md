@@ -715,7 +715,7 @@ ENTRA_AUDIENCE=api://<backend-client-id>
 Desde la carpeta `Backend/`:
 
 ```powershell
-"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
+"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
 ```
 
 ### Paso 3: levantar los contenedores

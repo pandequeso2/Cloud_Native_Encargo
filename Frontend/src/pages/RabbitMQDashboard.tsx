@@ -306,13 +306,13 @@ export function RabbitMQDashboard() {
           </p>
 
           <div className="button-group">
-            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Juan Pérez')}>
+            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Carlos Ramirez')}>
               Enviar Entrega Carlos Ramirez
             </button>
-            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante María García')}>
+            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Valentina Soto')}>
               Enviar Entrega Valentina Soto
             </button>
-            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Carlos López')}>
+            <button className="btn btn--primary" onClick={() => handleSendOrder('Estudiante Andres Muñoz')}>
               Enviar Entrega Andrés Muñoz 
             </button>
           </div>

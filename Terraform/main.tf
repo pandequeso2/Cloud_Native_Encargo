@@ -115,14 +115,12 @@ resource "aws_instance" "backend" {
               #!/bin/bash
               set -e
               
-              # Configurar 4GB de SWAP
               fallocate -l 4G /swapfile
               chmod 600 /swapfile
               mkswap /swapfile
               swapon /swapfile
               echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
-              # Instalar Docker
               apt-get update
               apt-get install -y ca-certificates curl gnupg git
               install -m 0755 -d /etc/apt/keyrings
@@ -132,11 +130,9 @@ resource "aws_instance" "backend" {
               apt-get update
               apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-              # Clonar el proyecto
               mkdir -p /home/ubuntu/app
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
 
-              # Escribir el archivo .env preparatorio
               cat <<EOT > /home/ubuntu/app/.env
               ECR_REGISTRY=${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com
               ENTRA_TENANT_ID=120aafaf-ea47-4c03-b1b6-68ef7c7c9dce
@@ -144,11 +140,12 @@ resource "aws_instance" "backend" {
               DB_HOST=${aws_db_instance.mysql_db.address} 
               DB_USERNAME=${var.db_username}
               DB_PASSWORD=${var.db_password}
+              RABBITMQ_USER=admin
+              RABBITMQ_PASSWORD=admin123
               EOT
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
               cd /home/ubuntu/app
-              # El despliegue de los contenedores lo realizará GitHub Actions mediante SSH
               EOF
 
   tags = {

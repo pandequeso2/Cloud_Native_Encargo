@@ -12,6 +12,7 @@ locals {
     "cloudnative-encargo-trabajos-service",
     "cloudnative-encargo-entregas-service",
     "cloudnative-encargo-comentarios-service",
+    "cloudnative-encargo-rabbitmq-service", 
     "cloudnative-encargo-frontend"
   ]
 }

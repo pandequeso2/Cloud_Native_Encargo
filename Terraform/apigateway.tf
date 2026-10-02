@@ -5,7 +5,7 @@ resource "aws_apigatewayv2_api" "http_api" {
   cors_configuration {
     allow_origins = ["http://${aws_eip.frontend_eip.public_ip}", "http://localhost:3000"]
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers = ["Authorization", "Content-Type", "X-Requested-With"]
+    allow_headers = ["*"] 
     max_age       = 300
   }
 }
