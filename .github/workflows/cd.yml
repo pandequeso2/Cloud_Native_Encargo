@@ -44,9 +44,7 @@ jobs:
       - name: Compilar jar
         if: matrix.service.name != 'frontend'
         working-directory: ${{ matrix.service.path }}
-        run: |
-          chmod +x ./mvnw
-          ./mvnw clean package -DskipTests
+        run: mvn clean package -DskipTests
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
