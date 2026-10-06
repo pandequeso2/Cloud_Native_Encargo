@@ -109,17 +109,20 @@ services:
     depends_on: [eureka-server]
     networks: [backend]
 
-  rabbitmq:
+  rabbitmq-1:
     image: rabbitmq:4.2-management
-    container_name: rabbitmq
+    container_name: rabbitmq-1
+    hostname: rabbitmq-1
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-secret_cookie_value}
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_data_1:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 10s
@@ -129,16 +132,44 @@ services:
     networks:
       - backend
 
+  rabbitmq-2:
+    image: rabbitmq:4.2-management
+    container_name: rabbitmq-2
+    hostname: rabbitmq-2
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-secret_cookie_value}
+    volumes:
+      - rabbitmq_data_2:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    depends_on:
+      rabbitmq-1:
+        condition: service_healthy
+    networks:
+      - backend
+
   rabbitmq-service:
     image: ${ECR_REGISTRY}/cloudnative-encargo-rabbitmq-service:latest
     container_name: rabbitmq-service
     environment:
       EUREKA_HOST: eureka-server
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_ADDRESSES: rabbitmq-1:5672,rabbitmq-2:5672
       RABBITMQ_USER: ${RABBITMQ_USER:-admin}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-admin123}
     depends_on:
-      rabbitmq:
+      rabbitmq-1:
+        condition: service_healthy
+      rabbitmq-2:
         condition: service_healthy
       eureka-server:
         condition: service_started
@@ -181,4 +212,5 @@ networks:
     driver: bridge
 
 volumes:
-  rabbitmq_data:
+  rabbitmq_data_1:
+  rabbitmq_data_2:
