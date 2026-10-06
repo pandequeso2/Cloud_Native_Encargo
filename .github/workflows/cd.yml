@@ -81,13 +81,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copiar docker-compose.prod.yml al Backend
+      - name: Copiar docker-compose.prod.yml y rabbitmq.conf al Backend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,rabbitmq.conf"
           target: "/home/ubuntu"
 
       - name: Desplegar en el Backend (EC2)
