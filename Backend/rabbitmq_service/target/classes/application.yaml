@@ -5,8 +5,7 @@ spring:
   application:
     name: rabbitmq-service
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672,localhost:5673}
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASSWORD:admin123}
     virtual-host: /

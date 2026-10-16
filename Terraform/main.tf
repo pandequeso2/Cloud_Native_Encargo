@@ -214,9 +214,12 @@ resource "aws_instance" "frontend" {
               VITE_ENTRA_CLIENT_ID=${var.entra_client_id}
               VITE_ENTRA_TENANT_ID=${var.entra_tenant_id}
               VITE_ENTRA_API_CLIENT_ID=${replace(var.entra_audience, "api://", "")}
-              VITE_API_BASE_URL=http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}
-              VITE_REDIRECT_URI=http://${aws_eip.frontend_eip.public_ip}
+              VITE_API_BASE_URL=
+              VITE_REDIRECT_URI=https://${aws_eip.frontend_eip.public_ip}
               EOT
+
+              # Inyectar la IP del Backend en la configuracion de Nginx
+              sed -i "s|http://.*:8095|http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}|g" /home/ubuntu/app/Frontend/nginx.conf
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
 
@@ -226,8 +229,8 @@ resource "aws_instance" "frontend" {
                 --build-arg VITE_ENTRA_CLIENT_ID="${var.entra_client_id}" \
                 --build-arg VITE_ENTRA_TENANT_ID="${var.entra_tenant_id}" \
                 --build-arg VITE_ENTRA_API_CLIENT_ID="${replace(var.entra_audience, "api://", "")}" \
-                --build-arg VITE_API_BASE_URL="http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}" \
-                --build-arg VITE_REDIRECT_URI="http://${aws_eip.frontend_eip.public_ip}" \
+                --build-arg VITE_API_BASE_URL="" \
+                --build-arg VITE_REDIRECT_URI="https://${aws_eip.frontend_eip.public_ip}" \
                 -t cloudnative-frontend .
 
               docker rm -f frontend || true

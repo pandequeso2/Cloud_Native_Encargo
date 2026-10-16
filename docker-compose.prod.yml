@@ -182,7 +182,11 @@ services:
     image: ${ECR_REGISTRY}/cloudnative-encargo-gateway:latest
     ports:
       - "8095:8095"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
+      - JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true
       - NOTAS_HOST=notas-service
       - ASIGNATURAS_HOST=asignaturas-service
       - PROFESORES_HOST=profesores-service
@@ -198,14 +202,6 @@ services:
       - ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
       - ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
     depends_on: [eureka-server]
-    networks: [backend]
-
-  frontend:
-    image: ${ECR_REGISTRY}/cloudnative-encargo-frontend:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on: [gateway]
     networks: [backend]
 
 networks:
