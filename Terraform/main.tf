@@ -129,7 +129,15 @@ resource "aws_instance" "backend" {
               chmod a+r /etc/apt/keyrings/docker.gpg
               echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" > /etc/apt/sources.list.d/docker.list
               apt-get update
-              apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin maven openjdk-17-jdk
+
+              # Configurar DNS publico para evitar fallos de resolucion de Microsoft en contenedores
+              cat << 'EODNS' > /etc/docker/daemon.json
+              {
+                "dns": ["8.8.8.8", "1.1.1.1"]
+              }
+              EODNS
+              systemctl restart docker
 
               mkdir -p /home/ubuntu/app
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
@@ -148,19 +156,32 @@ resource "aws_instance" "backend" {
               RABBITMQ_PASSWORD=admin123
               EOT
 
-              # Script para iniciar/actualizar los microservicios
+              # Script para compilar y levantar los microservicios automaticamente
               cat << 'EOT' > /home/ubuntu/app/start.sh
               #!/bin/bash
               set -e
               cd /home/ubuntu/app
               REGISTRY=$(grep ECR_REGISTRY .env | cut -d '=' -f2)
-              aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin "$REGISTRY" || true
-              sudo docker compose pull || true
-              sudo docker compose up -d
+
+              # Compilar microservicios si no existen los artefactos JAR
+              if [ ! -f "Backend/gateway/target/gateway-0.0.1-SNAPSHOT.jar" ]; then
+                for dir in Backend/*/; do
+                  if [ -f "$dir/pom.xml" ]; then
+                    svc=$(basename "$dir")
+                    echo "Compilando $svc..."
+                    (cd "$dir" && mvn clean package -DskipTests)
+                    sudo docker build -t "$REGISTRY/cloudnative-encargo-$${svc//_/-}:latest" "$dir"
+                  fi
+                done
+              fi
+
+              sudo docker pull rabbitmq:4.2-management || true
+              sudo docker compose -f docker-compose.prod.yml up -d
               EOT
               chmod +x /home/ubuntu/app/start.sh
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
+              /home/ubuntu/app/start.sh
               EOF
 
   tags = {
