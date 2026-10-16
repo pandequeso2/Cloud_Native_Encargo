@@ -11,7 +11,7 @@ import { LogLevel } from '@azure/msal-browser';
 // Permite leer variables de entorno Vite o usar los valores por defecto de Azure
 const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID || 'be1f94f2-51ba-4a74-ab8d-b258e2123e6e'; // ID de cloudnative-frontend (SPA)
 const tenantId = import.meta.env.VITE_ENTRA_TENANT_ID || '551dc2ab-db79-43ed-97de-ec90a21f3e0c'; // ID de tu Tenant (Directorio)
-const apiClientId = import.meta.env.VITE_ENTRA_API_CLIENT_ID || 'cdde4875-2f04-4a9c-b27c-2e1ad98c9366'; // ID de cloudnative-backend (API)
+const apiClientId = import.meta.env.VITE_ENTRA_API_CLIENT_ID || 'cdde4875-2f04-4a9e-b27c-2e1ad93c9366'; // ID exacto en Azure (cloudnative-backend)
 
 // Detecta automáticamente en qué IP o dominio está corriendo la página web
 const redirectUri = window.location.origin;
@@ -21,9 +21,9 @@ const redirectUri = window.location.origin;
 //    ? import.meta.env.VITE_API_BASE_URL 
 //    : 'http://98.95.159.57:8095'; 
 
-// ✅ CÓDIGO NUEVO:
-// Usa la variable del .env o cae a localhost si no está definida
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8095';
+// En producción o con proxy inverso Nginx, una URL base vacía ("") permite peticiones relativas al mismo origen
+// evitando por completo los errores de Mixed Content (HTTPS vs HTTP) y CORS
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : '';
 
 export const msalConfig: Configuration = {
   auth: {

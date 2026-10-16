@@ -5,7 +5,7 @@ resource "aws_apigatewayv2_api" "http_api" {
   cors_configuration {
     allow_origins = ["http://${aws_eip.frontend_eip.public_ip}", "http://localhost:3000"]
     allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers = ["*"] 
+    allow_headers = ["*"]
     max_age       = 300
   }
 }
@@ -18,7 +18,7 @@ resource "aws_apigatewayv2_authorizer" "entra_jwt" {
 
   jwt_configuration {
     audience = ["aec497bb-c720-40cc-9e4f-87f811226d6f"]
-    issuer = "https://login.microsoftonline.com/120aafaf-ea47-4c03-b1b6-68ef7c7c9dce/v2.0"
+    issuer   = "https://login.microsoftonline.com/120aafaf-ea47-4c03-b1b6-68ef7c7c9dce/v2.0"
   }
 }
 

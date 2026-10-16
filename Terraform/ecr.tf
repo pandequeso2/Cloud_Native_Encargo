@@ -12,7 +12,7 @@ locals {
     "cloudnative-encargo-trabajos-service",
     "cloudnative-encargo-entregas-service",
     "cloudnative-encargo-comentarios-service",
-    "cloudnative-encargo-rabbitmq-service", 
+    "cloudnative-encargo-rabbitmq-service",
     "cloudnative-encargo-frontend"
   ]
 }
@@ -21,6 +21,6 @@ resource "aws_ecr_repository" "repositorios" {
   for_each             = toset(local.microservicios)
   name                 = each.key
   image_tag_mutability = "MUTABLE"
-  
-  force_delete         = true 
+
+  force_delete = true
 }

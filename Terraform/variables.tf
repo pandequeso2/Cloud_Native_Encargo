@@ -6,13 +6,13 @@ variable "aws_region" {
 
 variable "git_repo_url" {
   type        = string
-  default     = "https://github.com/tu-usuario/Cloud_Native_Encargo.git"
+  default     = "https://github.com/pandequeso2/Cloud_Native_Encargo.git"
   description = "URL del repositorio GitHub del proyecto."
 }
 
 variable "git_branch" {
   type        = string
-  default     = "main"
+  default     = "Develop"
   description = "Rama del repositorio a desplegar."
 }
 
@@ -41,14 +41,14 @@ variable "db_host" {
 }
 
 variable "db_username" {
-  type        = string
-  default     = "admin"
+  type    = string
+  default = "admin"
 }
 
 variable "db_password" {
-  type        = string
-  sensitive   = true
-  default     = "BitacoraSegura2026"
+  type      = string
+  sensitive = true
+  default   = "BitacoraSegura2026"
 }
 
 variable "entra_tenant_id" {
@@ -59,7 +59,7 @@ variable "entra_tenant_id" {
 
 variable "entra_audience" {
   type        = string
-  default     = "api://cdde4875-2f04-4a9c-b27c-2e1ad98c9366"
+  default     = "api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366"
   description = "Audience de la API (cloudnative-backend) en Microsoft Entra ID."
 }
 
@@ -67,4 +67,4 @@ variable "entra_client_id" {
   type        = string
   default     = "be1f94f2-51ba-4a74-ab8d-b258e2123e6e"
   description = "Client ID de la SPA (cloudnative-frontend) en Microsoft Entra ID."
-}
+}

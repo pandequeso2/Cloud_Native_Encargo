@@ -57,7 +57,7 @@ resource "aws_security_group" "frontend_sg" {
   }
 
   ingress {
-    
+
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -101,10 +101,11 @@ data "aws_ami" "ubuntu" {
 
 # Instancia Backend (Microservicios + Spring Gateway)
 resource "aws_instance" "backend" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.backend_instance_type
-  key_name               = aws_key_pair.deploy_key.key_name
-  vpc_security_group_ids = [aws_security_group.backend_sg.id]
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.backend_instance_type
+  key_name                    = aws_key_pair.deploy_key.key_name
+  vpc_security_group_ids      = [aws_security_group.backend_sg.id]
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size = 25
@@ -133,6 +134,9 @@ resource "aws_instance" "backend" {
               mkdir -p /home/ubuntu/app
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
 
+              # Copiar compose de produccion y configuracion de RabbitMQ
+              cp /home/ubuntu/app/docker-compose.prod.yml /home/ubuntu/app/docker-compose.yml
+
               cat <<EOT > /home/ubuntu/app/.env
               ECR_REGISTRY=${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com
               ENTRA_TENANT_ID=${var.entra_tenant_id}
@@ -144,8 +148,19 @@ resource "aws_instance" "backend" {
               RABBITMQ_PASSWORD=admin123
               EOT
 
-              chown -R ubuntu:ubuntu /home/ubuntu/app
+              # Script para iniciar/actualizar los microservicios
+              cat << 'EOT' > /home/ubuntu/app/start.sh
+              #!/bin/bash
+              set -e
               cd /home/ubuntu/app
+              REGISTRY=$(grep ECR_REGISTRY .env | cut -d '=' -f2)
+              aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin "$REGISTRY" || true
+              sudo docker compose pull || true
+              sudo docker compose up -d
+              EOT
+              chmod +x /home/ubuntu/app/start.sh
+
+              chown -R ubuntu:ubuntu /home/ubuntu/app
               EOF
 
   tags = {
@@ -160,10 +175,11 @@ resource "aws_eip_association" "backend_eip_assoc" {
 
 # Instancia Frontend (Nginx SPA)
 resource "aws_instance" "frontend" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.frontend_instance_type
-  key_name               = aws_key_pair.deploy_key.key_name
-  vpc_security_group_ids = [aws_security_group.frontend_sg.id]
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.frontend_instance_type
+  key_name                    = aws_key_pair.deploy_key.key_name
+  vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size = 15
@@ -194,15 +210,28 @@ resource "aws_instance" "frontend" {
               mkdir -p /home/ubuntu/app
               git clone -b ${var.git_branch} ${var.git_repo_url} /home/ubuntu/app
 
-              cat <<EOT > /home/ubuntu/app/frontend/.env
+              cat <<EOT > /home/ubuntu/app/Frontend/.env
               VITE_ENTRA_CLIENT_ID=${var.entra_client_id}
               VITE_ENTRA_TENANT_ID=${var.entra_tenant_id}
               VITE_ENTRA_API_CLIENT_ID=${replace(var.entra_audience, "api://", "")}
-              VITE_API_GATEWAY_URL=http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}
+              VITE_API_BASE_URL=http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}
+              VITE_REDIRECT_URI=http://${aws_eip.frontend_eip.public_ip}
               EOT
 
               chown -R ubuntu:ubuntu /home/ubuntu/app
-              cd /home/ubuntu/app
+
+              # Compilar y levantar la SPA automáticamente al iniciar la EC2
+              cd /home/ubuntu/app/Frontend
+              docker build \
+                --build-arg VITE_ENTRA_CLIENT_ID="${var.entra_client_id}" \
+                --build-arg VITE_ENTRA_TENANT_ID="${var.entra_tenant_id}" \
+                --build-arg VITE_ENTRA_API_CLIENT_ID="${replace(var.entra_audience, "api://", "")}" \
+                --build-arg VITE_API_BASE_URL="http://${aws_eip.backend_eip.public_ip}:${var.backend_gateway_port}" \
+                --build-arg VITE_REDIRECT_URI="http://${aws_eip.frontend_eip.public_ip}" \
+                -t cloudnative-frontend .
+
+              docker rm -f frontend || true
+              docker run -d --name frontend --restart always -p 80:80 -p 443:443 cloudnative-frontend
               EOF
 
   tags = {
