@@ -7,10 +7,11 @@ import { LogLevel } from '@azure/msal-browser';
 // como una contraseña (un tenant/client ID no permite autenticarse por sí
 // solo), pero sí identifican públicamente el tenant de Entra ID del equipo.
 
-// Valores actualizados a tu entorno CloudNativeApi
-const clientId = '47099009-530d-4953-9c13-8453c7369262'; // ID de bitacora-frontend-spa
-const tenantId = '120aafaf-ea47-4c03-b1b6-68ef7c7c9dce'; // ID de tu Tenant (Directorio)
-const apiClientId = 'aec497bb-c720-40cc-9e4f-87f811226d6f'; // ID de bitacora-backend-api
+// Valores actualizados al entorno Microsoft Entra ID
+// Permite leer variables de entorno Vite o usar los valores por defecto de Azure
+const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID || 'be1f94f2-51ba-4a74-ab8d-b258e2123e6e'; // ID de cloudnative-frontend (SPA)
+const tenantId = import.meta.env.VITE_ENTRA_TENANT_ID || '551dc2ab-db79-43ed-97de-ec90a21f3e0c'; // ID de tu Tenant (Directorio)
+const apiClientId = import.meta.env.VITE_ENTRA_API_CLIENT_ID || 'cdde4875-2f04-4a9c-b27c-2e1ad98c9366'; // ID de cloudnative-backend (API)
 
 // Detecta automáticamente en qué IP o dominio está corriendo la página web
 const redirectUri = window.location.origin;

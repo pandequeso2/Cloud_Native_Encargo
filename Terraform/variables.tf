@@ -50,3 +50,21 @@ variable "db_password" {
   sensitive   = true
   default     = "BitacoraSegura2026"
 }
+
+variable "entra_tenant_id" {
+  type        = string
+  default     = "551dc2ab-db79-43ed-97de-ec90a21f3e0c"
+  description = "ID del Tenant (Directorio) en Microsoft Entra ID."
+}
+
+variable "entra_audience" {
+  type        = string
+  default     = "api://cdde4875-2f04-4a9c-b27c-2e1ad98c9366"
+  description = "Audience de la API (cloudnative-backend) en Microsoft Entra ID."
+}
+
+variable "entra_client_id" {
+  type        = string
+  default     = "be1f94f2-51ba-4a74-ab8d-b258e2123e6e"
+  description = "Client ID de la SPA (cloudnative-frontend) en Microsoft Entra ID."
+}
