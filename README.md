@@ -137,25 +137,18 @@ La arquitectura general del sistema puede representarse de la siguiente manera:
 - Vite
 - MSAL React
 - Microsoft Entra ID
-- Nginx
+- Nginx (Reverse Proxy + SSL)
 
-### Infraestructura
+### Infraestructura y Cloud
 
-- Docker
-- Docker Compose
-- RabbitMQ
-- Terraform
-- GitHub Actions
+- AWS (EC2, RDS MySQL, Elastic IPs, Security Groups)
+- Terraform (Infraestructura como Código - IaC)
+- Docker & Docker Compose
+- RabbitMQ 4.x
 ## 📁 Estructura del proyecto
 
 ```
 Cloud_Native_Encargo/
-│
-├── .github/
-│   └── workflows/
-│       └── cd.yml
-│
-├── .vscode/
 │
 ├── Backend/
 │   ├── eureka-server/
@@ -192,9 +185,13 @@ Cloud_Native_Encargo/
 │   └── package.json
 │
 ├── Terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
 │
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
+├── rabbitmq.conf
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -416,37 +413,47 @@ npm run preview
 
 ## 🔐 Autenticación
 
-La autenticación del Frontend utiliza Microsoft Entra ID mediante `@azure/msal-react`.
+## 🔐 Autenticación (Microsoft Entra ID)
 
-El sistema contempla:
+La autenticación y autorización del sistema está implementada mediante **Microsoft Entra ID** (anteriormente Azure AD), siguiendo el estándar OAuth 2.0 y OpenID Connect con arquitectura de dos aplicaciones registradas:
 
-- Inicio de sesión.
-- Cierre de sesión.
-- Protección de rutas.
-- Obtención de tokens.
-- Envío del token al Backend.
-- Lectura de roles y claims.
-- Renovación silenciosa del token cuando es posible.
+### 1. Registro de Aplicaciones en Entra ID
 
-La comunicación con el Backend se realiza mediante el API Gateway.
+| Aplicación | Tipo | Client ID / URI | Propósito |
+|---|---|---|---|
+| **`cloudnative-frontend`** | SPA (Single Page Application) | `be1f94f2-51ba-4a74-ab8d-b258e2123e6e` | Maneja el inicio/cierre de sesión interactivo y solicita tokens con `@azure/msal-react`. |
+| **`cloudnative-backend`** | Web API | `cdde4875-2f04-4a9e-b27c-2e1ad93c9366`<br>`api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366` | Expone el scope `access_as_user` y valida los Bearer Tokens recibidos en el API Gateway. |
+| **Tenant / Directorio** | Directorio Activo | `551dc2ab-db79-43ed-97de-ec90a21f3e0c` | Tenant institucional que emite los tokens JWT. |
+
+### 2. Flujo de Autenticación y Validación
 
 ```
 Usuario
-   │
+   │ 1. Login con cuenta institucional (@duocuc.cl)
    ▼
-Microsoft Entra ID
-   │
-   │ Token
+Microsoft Entra ID (login.microsoftonline.com)
+   │ 2. Emite Access Token JWT (scope: access_as_user)
    ▼
-Frontend
-   │
-   │ Bearer Token
+Frontend SPA (MSAL Browser)
+   │ 3. Petición HTTPS con cabecera:
+   │    Authorization: Bearer <JWT>
    ▼
-API Gateway
-   │
+API Gateway (Spring Cloud Gateway :8095)
+   │ 4. Valida firma contra JWKS de Microsoft:
+   │    https://login.microsoftonline.com/common/discovery/v2.0/keys
+   │ 5. Valida Issuer (v1 y v2) y Audience
+   │ 6. Inyecta claims y contexto de usuario (X-User-Email, X-User-Role)
    ▼
-Microservicios
+Microservicios de Backend (:8083 - :8092)
 ```
+
+### 3. Mapeo de Roles Institucionales
+
+El API Gateway mapea automáticamente los roles de seguridad a partir del correo autenticado:
+
+- `ben.arayag@duocuc.cl` ➔ **Admin** (permisos de creación, edición y eliminación de grupos, trabajos y configuraciones).
+- `vi.garridod@duocuc.cl` ➔ **Profesor** (permisos de evaluación y revisión).
+- `mat.mirandag@duocuc.cl` ➔ **Estudiante** (permisos de entrega y consulta).
 
 > ℹ️ Las rutas bajo `/api/v1/rabbitmq/**` están declaradas como públicas en el `SecurityConfig` del Gateway, por lo que el dashboard de RabbitMQ puede consultarse sin un token válido.
 
@@ -630,154 +637,159 @@ El Backend también contiene un documento específico con el plan de pruebas:
 
 - `Backend/TESTING_PLAN.md`
 
-## 🏗️ Terraform
+## 🏗️ Terraform (Infraestructura como Código)
 
-El repositorio contiene una carpeta:
-
-```
-Terraform/
-```
-
-destinada a la configuración de infraestructura mediante Terraform.
-
-Actualmente esta carpeta sirve como base para incorporar y administrar infraestructura como código dentro del proyecto.
+El despliegue de toda la infraestructura en la nube de **Amazon Web Services (AWS)** está completamente automatizado mediante Terraform dentro de la carpeta:
 
 ```
 Terraform/
-└── .gitkeep
+├── main.tf        # Definición de recursos AWS (VPC, SGs, RDS, EC2s, EIPs, user_data)
+├── variables.tf   # Variables parametrizables (IDs de Entra ID, tipos de instancia, DB)
+└── outputs.tf     # IPs elásticas generadas, URLs públicas y endpoint de RDS
 ```
 
-## 🔄 Arquitectura de despliegue
+### Componentes desplegados en AWS
 
-El sistema está preparado para ejecutarse utilizando contenedores Docker.
+1. **Red y Seguridad (VPC y Security Groups):**
+   - Reglas de ingreso seguras para puertos `80` (HTTP), `443` (HTTPS), `8095` (Gateway), `8761` (Eureka), `15672` (RabbitMQ UI) y `22` (SSH).
+2. **Base de Datos Gestionada:**
+   - Instancia **AWS RDS MySQL** dedicada para la persistencia de datos de los microservicios.
+3. **Instancia EC2 Frontend (t2.micro):**
+   - Asociada a una **Elastic IP** fija.
+   - Ejecuta un contenedor Docker con **Nginx** sirviendo la SPA en React + TypeScript.
+   - Cuenta con **terminación SSL autofirmada (puerto 443 HTTPS)** y proxy inverso en `location /api/` que reenvía el tráfico internamente hacia el API Gateway, eliminando por completo errores de *Mixed Content* y *CORS*.
+4. **Instancia EC2 Backend (t2.medium):**
+   - Asociada a una **Elastic IP** fija.
+   - Ejecuta todos los microservicios de Spring Boot, Eureka Server, clúster de RabbitMQ 4.x y el API Gateway mediante Docker Compose.
 
-```
-                       ┌─────────────────┐
-                       │     Internet    │
-                       └────────┬────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │    Frontend     │
-                       │ React + Nginx   │
-                       │      :5173      │
-                       └────────┬────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │  API Gateway    │
-                       │      :8095      │
-                       └────────┬────────┘
-                                │
-               ┌────────────────┼────────────────┐
-               │                │                │
-               ▼                ▼                ▼
-          Microservicio    Microservicio    Microservicio
-               │                │                │
-               └────────────────┼────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │      MySQL      │
-                       │      :3306      │
-                       └─────────────────┘
+### Automatización completa vía `user_data`
 
-                       ┌─────────────────┐
-                       │     Eureka      │
-                       │      :8761      │
-                       └─────────────────┘
+Tanto el Frontend como el Backend cuentan con scripts de inicialización (`user_data`) que se ejecutan automáticamente al arrancar las máquinas:
 
-                       ┌─────────────────┐
-                       │    RabbitMQ     │
-                       │  :5672 / :15672 │
-                       └─────────────────┘
+- **Configuración de DNS en Docker:** Configura `/etc/docker/daemon.json` con los DNS `8.8.8.8` y `1.1.1.1` para garantizar la resolución de nombres hacia `login.microsoftonline.com`.
+- **Compilación automática:** Instala Maven y Java 17, compila los JARs de los microservicios y genera las imágenes Docker locales al primer inicio.
+- **Inyección dinámica de IPs:** Inyecta automáticamente la IP elástica del Backend dentro del archivo `nginx.conf` del Frontend.
+
+### Despliegue con Terraform
+
+```bash
+cd Terraform
+
+# 1. Inicializar plugins y proveedores de AWS
+terraform init
+
+# 2. Previsualizar los recursos a crear
+terraform plan
+
+# 3. Aplicar y desplegar la infraestructura
+terraform apply -auto-approve
 ```
 
-## 🚀 Inicio rápido
+## 🔄 Arquitectura de despliegue en AWS
 
-Si ya tienes Docker instalado y configuradas las variables de entorno necesarias:
+```
+                               ┌────────────────────────────────┐
+                               │            Internet            │
+                               └───────────────┬────────────────┘
+                                               │
+                                               ▼
+                       ┌────────────────────────────────────────────────┐
+                       │               EC2 FRONTEND (EIP)               │
+                       │            https://<FRONTEND_EIP>              │
+                       │  ┌──────────────────────────────────────────┐  │
+                       │  │ Nginx (SSL :443)                         │  │
+                       │  │  - SPA React / Vite                      │  │
+                       │  │  - Reverse Proxy: /api/ ──────────────┐  │  │
+                       │  └───────────────────────────────────────┼──┘  │
+                       └──────────────────────────────────────────┼─────┘
+                                                                  │
+                                                                  ▼
+                       ┌────────────────────────────────────────────────┐
+                       │               EC2 BACKEND (EIP)                │
+                       │             http://<BACKEND_EIP>               │
+                       │  ┌──────────────────────────────────────────┐  │
+                       │  │  Spring Cloud Gateway (:8095)            │  │
+                       │  │  (Valida JWT con Microsoft Entra ID)     │  │
+                       │  └───────┬──────────────────────────┬───────┘  │
+                       │          │                          │          │
+                       │          ▼                          ▼          │
+                       │  ┌──────────────┐            ┌──────────────┐  │
+                       │  │ Microservicios│           │ Clúster      │  │
+                       │  │ Spring Boot  │            │ RabbitMQ 4.x │  │
+                       │  │ (:8083-:8092)│            │ (:5672/15672)│  │
+                       │  └───────┬──────┘            └──────────────┘  │
+                       │          │ Eureka Server (:8761)               │
+                       └──────────┼─────────────────────────────────────┘
+                                  │
+                                  ▼
+                       ┌────────────────────────────────────────────────┐
+                       │                 AWS RDS MySQL                  │
+                       │              Base de datos :3306               │
+                       └────────────────────────────────────────────────┘
+```
 
-### Paso 1: crear las variables de entorno
+## 🚀 Inicio rápido (Entorno Local)
+
+Si deseas ejecutar el proyecto localmente con Docker Compose:
+
+### Paso 1: Crear las variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Las variables necesarias se encuentran en `.env.example`:
-
+Configura en `.env`:
 ```bash
-ENTRA_TENANT_ID=<tenant-id>
-ENTRA_AUDIENCE=api://<backend-client-id>
+ENTRA_TENANT_ID=551dc2ab-db79-43ed-97de-ec90a21f3e0c
+ENTRA_AUDIENCE=api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366
 ```
 
-### Paso 2: crear los jars en el Backend
+### Paso 2: Compilar los JARs de los microservicios
 
 Desde la carpeta `Backend/`:
 
 ```powershell
-"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
+"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
 ```
 
-### Paso 3: levantar los contenedores
-
-En la terminal principal, desde la raíz del proyecto:
+### Paso 3: Levantar los contenedores
 
 ```bash
-docker compose up -d --build
-```
-
-### Clonar el repositorio
-
-```bash
-git clone https://github.com/pandequeso2/Cloud_Native_Encargo.git
-cd Cloud_Native_Encargo
-git checkout Develop
 docker compose up -d --build
 ```
 
 ### URLs de acceso
 
-| Servicio | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Dashboard RabbitMQ (en la app) | http://localhost:5173/rabbitmq |
-| Eureka | http://localhost:8761 |
-| API Gateway | http://localhost:8095 |
-| RabbitMQ Management UI | http://localhost:15672 |
+| Entorno | Servicio | URL |
+|---|---|---|
+| **Local** | Frontend SPA | `http://localhost:5173` |
+| **Local** | Eureka Dashboard | `http://localhost:8761` |
+| **Local** | API Gateway | `http://localhost:8095` |
+| **Local** | RabbitMQ Management UI | `http://localhost:15672` (usuario: `admin` / pass: `admin123`) |
+| **AWS Producción** | Frontend SPA (HTTPS) | `https://<FRONTEND_EIP>` (ej: `https://184.192.68.199`) |
+| **AWS Producción** | API Gateway | `http://<BACKEND_EIP>:8095` (ej: `http://34.234.18.25:8095`) |
+| **AWS Producción** | Eureka Dashboard | `http://<BACKEND_EIP>:8761` |
+| **AWS Producción** | RabbitMQ Management | `http://<BACKEND_EIP>:15672` |
 
 > ℹ️ El dashboard de RabbitMQ dentro de la aplicación requiere autenticación por tratarse de una ruta protegida del Frontend; los endpoints del microservicio (`/api/v1/rabbitmq/**`) son públicos en el Gateway.
 
-## 🚀 Despliegue (CI/CD)
+## 🚀 Despliegue y Operación en AWS
 
-El repositorio incluye el workflow `.github/workflows/cd.yml`, que se ejecuta en cada `push` a la rama `Develop` (y de forma manual mediante `workflow_dispatch`).
+La solución en producción se orquesta combinando **Terraform (IaC)** para el aprovisionamiento de infraestructura y **Docker Compose** en la instancia Backend:
 
-El pipeline realiza dos etapas:
-
-### 1. `build-and-push`
-
-Compila cada servicio, construye la imagen Docker y la publica en **Amazon ECR** con dos tags: `latest` y el SHA del commit.
-
-La matriz de servicios incluye `eureka-server`, `gateway`, los microservicios de dominio, `frontend`.
-
-> ⚠️ **`rabbitmq-service` aún no está incluido en la matriz del workflow**, por lo que su imagen no se compila ni se publica en ECR. Para que el microservicio forme parte del despliegue en AWS, habría que agregar la entrada correspondiente:
->
-> ```yaml
-> - { name: rabbitmq-service, path: Backend/rabbitmq_service }
-> ```
->
-> Asimismo, `docker-compose.prod.yml` todavía no define los servicios `rabbitmq` ni `rabbitmq-service`, por lo que la mensajería no está presente en el despliegue de producción.
-
-### 2. `deploy`
-
-Se conecta por SSH a la instancia EC2, copia `docker-compose.prod.yml`, genera el archivo `.env` con los secretos y ejecuta:
-
-```bash
-sudo docker compose pull
-sudo docker compose up -d
-sudo docker image prune -f
-```
-
-El Frontend se despliega por separado en otra instancia, escuchando en los puertos `80` y `443`.
+1. **Aprovisionamiento automatizado:**
+   - Al ejecutar `terraform apply`, AWS crea las instancias EC2, configura las Elastic IPs, levanta RDS MySQL e inicia el script `user_data`.
+   - `user_data` compila automáticamente los microservicios con Maven, configura el daemon de Docker (`8.8.8.8`) y levanta el clúster con `docker-compose.prod.yml`.
+2. **Actualización de servicios en Backend:**
+   - Si se requiere actualizar un microservicio directamente en la EC2 Backend:
+   ```bash
+   cd /home/ubuntu/app/Backend/<servicio>
+   mvn clean package -DskipTests
+   sudo docker compose -f /home/ubuntu/app/docker-compose.prod.yml up -d --build --no-deps <nombre-servicio>
+   ```
+3. **Persistencia y Resiliencia:**
+   - La base de datos RDS mantiene los datos independientemente del ciclo de vida de las EC2.
+   - Las colas y configuraciones de RabbitMQ persisten en volúmenes Docker dedicados (`rabbitmq_data_1` y `rabbitmq_data_2`).
 
 ## 👥 Autores
 
