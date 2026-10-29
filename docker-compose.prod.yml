@@ -274,3 +274,5 @@ networks:
 volumes:
   rabbitmq_data_1:
   rabbitmq_data_2:
+  zookeeper_data:
+  kafka_data:
