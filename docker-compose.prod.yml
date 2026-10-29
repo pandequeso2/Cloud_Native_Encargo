@@ -1,4 +1,4 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   eureka-server:
@@ -260,6 +260,7 @@ services:
       - ENTREGAS_HOST=entregas-service
       - COMENTARIOS_HOST=comentarios-service
       - RABBITMQ_SERVICE_HOST=rabbitmq-service
+      - KAFKA_SERVICE_HOST=kafka-service
       - EUREKA_HOST=eureka-server
       - ENTRA_TENANT_ID=${ENTRA_TENANT_ID}
       - ENTRA_AUDIENCE=${ENTRA_AUDIENCE}
