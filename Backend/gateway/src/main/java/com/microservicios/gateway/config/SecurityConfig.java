@@ -32,7 +32,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/webjars/**",
             "/api/v1/*/v3/api-docs/**",
-            "/api/v1/rabbitmq/**"
+            "/api/v1/rabbitmq/**",
+            "/api/v1/kafka/**"
     };
 
     @Bean
