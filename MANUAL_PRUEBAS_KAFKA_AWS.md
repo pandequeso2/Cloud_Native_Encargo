@@ -603,6 +603,7 @@ El presente manual y las pruebas detalladas garantizan la validación de:
 
 
 6. **Crear Jars:**
+Esto se hace dentro de la maquina ec2 del backend
 cd /home/ubuntu/app
 source .env
 
