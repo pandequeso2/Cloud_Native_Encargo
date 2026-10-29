@@ -578,6 +578,7 @@ sudo docker exec -it kafka kafka-topics.sh \
 
 | Síntoma / Problema | Causa Probable | Solución Paso a Paso |
 | :--- | :--- | :--- |
+| **Error 502 (Bad Gateway) en `/api/v1/kafka/alertas` en el navegador** | 1. `KAFKA_SERVICE_HOST` no está declarado en las variables de entorno de `gateway` en `docker-compose.prod.yml` (por lo que busca en `localhost:8094` dentro del contenedor en lugar de `kafka-service:8094`).<br>2. El contenedor `kafka-service` no se ha iniciado o falló al compilar. | 1. Ingresar por SSH a la EC2 de Backend.<br>2. En `/home/ubuntu/app/docker-compose.prod.yml`, asegurarse de que `gateway` tenga `- KAFKA_SERVICE_HOST=kafka-service`.<br>3. Verificar si el contenedor `kafka-service` está en ejecución con `sudo docker compose -f docker-compose.prod.yml ps`. Si no está, compilarlo con Maven y levantarlo.<br>4. Recrear el Gateway: `sudo docker compose -f docker-compose.prod.yml up -d --force-recreate gateway kafka-service`. |
 | **No se puede acceder a Kafka UI (`:8080`) o Eureka (`:8761`)** | El Security Group de AWS bloquea el tráfico entrante o el contenedor no ha terminado de iniciar. | 1. Valida las reglas de entrada del Security Group `encargo-backend-sg` en AWS.<br>2. Comprueba si el contenedor está corriendo: `sudo docker compose -f docker-compose.prod.yml ps`.<br>3. Como alternativa inmediata, abre un túnel SSH: `ssh -i deploy_key.pem -L 8080:localhost:8080 ubuntu@<BACKEND_IP>`. |
 | **La nota no aparece en `academic-grades-input`** | El microservicio `notas-service` no pudo conectarse a Kafka al arrancar. | 1. Revisa los logs: `sudo docker compose -f docker-compose.prod.yml logs notas-service`.<br>2. Verifica que la variable `KAFKA_BOOTSTRAP_SERVERS: kafka:9092` esté configurada.<br>3. Reinicia el servicio: `sudo docker compose -f docker-compose.prod.yml restart notas-service`. |
 | **Kafka Streams no genera alerta ante nota < 4.0** | El tópico de entrada o salida no coincide, o el formato del JSON no pudo ser deserializado. | 1. Inspecciona los logs: `sudo docker compose -f docker-compose.prod.yml logs kafka-service`.<br>2. Busca mensajes de error tipo `Error al deserializar evento de nota desde JSON`.<br>3. Comprueba el estado de la aplicación Streams mediante: `curl -s http://localhost:8094/api/v1/kafka/estado`. |
@@ -594,3 +595,46 @@ El presente manual y las pruebas detalladas garantizan la validación de:
 4. **Procesamiento de Eventos en Tiempo Real:** Filtrado y emisión reactiva de alertas académicas tempranas con Kafka Streams.
 5. **Observabilidad Integral:** Monitoreo visual de la topología con Eureka Dashboard, Kafka UI y bitácoras centralizadas de contenedores.
 
+
+
+
+
+
+
+
+6. **Crear Jars:**
+cd /home/ubuntu/app
+source .env
+
+# Lista de todos los microservicios
+SERVICIOS=(
+  "eureka-server"
+  "gateway"
+  "notas_service"
+  "asignaturas_service"
+  "profesores_service"
+  "grupos_service"
+  "integrantes_service"
+  "roles_service"
+  "secciones_service"
+  "trabajos_service"
+  "entregas_service"
+  "comentarios_service"
+  "rabbitmq_service"
+  "kafka_service"
+)
+
+# Compilar JAR y construir imagen Docker para cada uno
+for svc in "${SERVICIOS[@]}"; do
+  svc_dash="${svc//_/-}"
+  echo "=================================================="
+  echo "🔨 Compilando JAR y creando imagen para: $svc_dash"
+  echo "=================================================="
+  (cd "Backend/$svc" && mvn clean package -DskipTests)
+  sudo docker build -t "${ECR_REGISTRY}/cloudnative-encargo-${svc_dash}:latest" "Backend/$svc"
+done
+
+echo "=================================================="
+echo "🚀 Levantando todos los contenedores..."
+echo "=================================================="
+sudo docker compose -f docker-compose.prod.yml up -d
