@@ -95,3 +95,55 @@ export const profesoresApi = {
     httpClient.put<Profesor>(`/api/v1/profesores/${id}`, profesor).then((r) => r.data),
   eliminar: (id: number) => httpClient.delete<void>(`/api/v1/profesores/${id}`).then((r) => r.data),
 };
+export interface NuevaNota {
+  nota: number;
+  idIntegrante: number;
+  asignatura?: string;
+  ponderacion?: {
+    idPonderacion: number;
+  };
+}
+
+export interface NotaResponse {
+  idNota: number;
+  nota: number;
+  idIntegrante: number;
+  asignatura?: string;
+  ponderacion?: {
+    idPonderacion: number;
+    porcentaje: number;
+  };
+}
+
+export interface AlertaAcademicaDto {
+  idAlerta: string;
+  idEstudiante: number;
+  idNota?: number;
+  asignatura: string;
+  calificacion: number;
+  nivelAlerta: string;
+  mensaje: string;
+  fechaAlerta: string;
+}
+
+export const notasApi = {
+  listar: () => httpClient.get<NotaResponse[]>('/api/v1/notas').then((r) => r.data),
+  crear: (nueva: NuevaNota) =>
+    httpClient
+      .post<NotaResponse>('/api/v1/notas', {
+        nota: Number(nueva.nota),
+        idIntegrante: Number(nueva.idIntegrante),
+        asignatura: nueva.asignatura,
+        ponderacion: nueva.ponderacion ?? { idPonderacion: 1 },
+      })
+      .then((r) => r.data),
+};
+
+export const kafkaApi = {
+  obtenerAlertas: () =>
+    httpClient.get<AlertaAcademicaDto[]>('/api/v1/kafka/alertas').then((r) => r.data),
+  limpiarAlertas: () =>
+    httpClient.delete<{ mensaje: string }>('/api/v1/kafka/alertas').then((r) => r.data),
+  estado: () =>
+    httpClient.get<Record<string, unknown>>('/api/v1/kafka/estado').then((r) => r.data),
+};

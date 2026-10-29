@@ -87,6 +87,11 @@
             predicates:
               - Path=/api/v1/rabbitmq/**
 
+          - id: kafka
+            uri: http://${KAFKA_SERVICE_HOST:localhost}:8094
+            predicates:
+              - Path=/api/v1/kafka/**
+
   # Configuración del IDaaS (Microsoft Entra ID)
   security:
     entra-id:
@@ -135,3 +140,5 @@
           url: /api/v1/comentarios/v3/api-docs
         - name: rabbitmq
           url: /api/v1/rabbitmq/v3/api-docs
+        - name: kafka
+          url: /api/v1/kafka/v3/api-docs

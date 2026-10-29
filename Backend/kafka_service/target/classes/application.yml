@@ -1,0 +1,47 @@
+server:
+  port: 8094
+
+spring:
+  application:
+    name: kafka-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    streams:
+      application-id: academic-pipeline-app
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+      auto-startup: true
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        commit.interval.ms: 1000
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: academic-pipeline-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+app:
+  kafka:
+    topics:
+      grades-input: academic-grades-input
+      alerts-output: academic-alerts-output
+
+springdoc:
+  api-docs:
+    path: /api/v1/kafka/v3/api-docs
+
+logging:
+  level:
+    root: INFO
+    cl.duoc.kafka_service: DEBUG
+    org.apache.kafka.streams: INFO

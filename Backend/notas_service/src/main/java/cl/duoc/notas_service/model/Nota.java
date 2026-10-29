@@ -25,4 +25,7 @@ public class Nota {
     @NotNull(message = "el id del integrante es obligatorio")
     private Integer idIntegrante;
 
+    @Transient
+    private String asignatura;
+
 }
