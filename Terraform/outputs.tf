@@ -18,6 +18,16 @@ output "api_gateway_invoke_url" {
   value       = aws_apigatewayv2_stage.default_stage.invoke_url
 }
 
+output "kafka_ui_url" {
+  description = "URL de acceso a Kafka UI en el Backend."
+  value       = "http://${aws_eip.backend_eip.public_ip}:8080"
+}
+
+output "eureka_dashboard_url" {
+  description = "URL del panel de control de Eureka Discovery Server."
+  value       = "http://${aws_eip.backend_eip.public_ip}:8761"
+}
+
 # Output para extraer la llave SSH de forma segura
 output "ec2_ssh_private_key" {
   value     = tls_private_key.deploy_key.private_key_pem
