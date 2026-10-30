@@ -130,7 +130,6 @@ services:
       SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
       EUREKA_HOST: eureka-server
     depends_on: [eureka-server]
-    depends_on: [eureka-server]
     networks: [backend]
 
   rabbitmq-1:

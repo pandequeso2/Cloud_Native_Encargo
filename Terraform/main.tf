@@ -196,8 +196,8 @@ resource "aws_instance" "backend" {
               EOT
               chmod +x /home/ubuntu/app/start.sh
 
-              chown -R ubuntu:ubuntu /home/ubuntu/app
               /home/ubuntu/app/start.sh
+              chown -R ubuntu:ubuntu /home/ubuntu/app
               EOF
 
   tags = {

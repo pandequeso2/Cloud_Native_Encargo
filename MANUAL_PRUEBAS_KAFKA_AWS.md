@@ -607,6 +607,9 @@ Esto se hace dentro de la maquina ec2 del backend
 cd /home/ubuntu/app
 source .env
 
+# Asegurar permisos de usuario ubuntu sobre target/ y código fuente
+sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+
 # Lista de todos los microservicios
 SERVICIOS=(
   "eureka-server"
