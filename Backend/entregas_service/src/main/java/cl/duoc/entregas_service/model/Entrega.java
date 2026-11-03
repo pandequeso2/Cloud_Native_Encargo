@@ -27,6 +27,9 @@ public class Entrega {
     @Enumerated(EnumType.STRING)
     private Estado estado;
 
+    @Transient
+    private String estudiante;
+
     public enum Estado {
         PENDIENTE, ENTREGADO, ATRASADO
     }
