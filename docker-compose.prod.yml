@@ -115,7 +115,14 @@ services:
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
       SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
       EUREKA_HOST: eureka-server
-    depends_on: [eureka-server]
+      RABBITMQ_HOST: rabbitmq-1
+      RABBITMQ_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-admin123}
+    depends_on:
+      eureka-server:
+        condition: service_started
+      rabbitmq-1:
+        condition: service_healthy
     networks: [backend]
 
   comentarios-service:
