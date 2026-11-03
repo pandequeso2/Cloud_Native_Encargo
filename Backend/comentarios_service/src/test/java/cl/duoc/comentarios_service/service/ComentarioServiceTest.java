@@ -1,5 +1,6 @@
 package cl.duoc.comentarios_service.service;
 
+import cl.duoc.comentarios_service.dto.ComentarioEvento;
 import cl.duoc.comentarios_service.model.Comentario;
 import cl.duoc.comentarios_service.repository.ComentarioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -16,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +26,9 @@ public class ComentarioServiceTest {
 
     @Mock
     private ComentarioRepository repository;
+
+    @Mock
+    private KafkaTemplate<String, ComentarioEvento> kafkaTemplate;
 
     @InjectMocks
     private ComentarioService service;
@@ -72,5 +78,6 @@ public class ComentarioServiceTest {
         assertNotNull(resultado);
         assertEquals("Excelente trabajo", resultado.getContenido());
         verify(repository, times(1)).save(any(Comentario.class));
+        verify(kafkaTemplate, times(1)).send(eq("comentarios-academicos-topic"), eq("2"), any(ComentarioEvento.class));
     }
 }

@@ -28,4 +28,11 @@ public class Nota {
     @Transient
     private String asignatura;
 
+    public Integer getEstudianteId() {
+        return idIntegrante;
+    }
+
+    public void setEstudianteId(Integer estudianteId) {
+        this.idIntegrante = estudianteId;
+    }
 }

@@ -134,7 +134,10 @@ services:
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
       SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
       EUREKA_HOST: eureka-server
-    depends_on: [eureka-server]
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - eureka-server
+      - kafka
     networks: [backend]
 
   rabbitmq-1:

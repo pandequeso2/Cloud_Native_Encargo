@@ -738,3 +738,51 @@ Todos los componentes de tuning y pruebas de carga conviven de forma aislada y n
 - Los tópicos **`academic-grades-input`** y **`academic-alerts-output`** siguen procesando calificaciones y alertas tempranas de notas (< 4.0) de forma independiente.
 - El tópico **`sensor-topic`** maneja la carga masiva y métricas de throughput.
 - El bean `KafkaTemplate<String, String>` tuned optimiza también el rendimiento de publicación de calificaciones en `/api/v1/kafka/publicar-nota`.
+
+
+---
+
+## 📬 Paso 6: Integración del Tópico 2 (`comentarios-academicos-topic`) y Modelos JSON
+
+Se implementó el segundo caso de uso de eventos en el microservicio `comentarios_service` siguiendo la arquitectura EDA del proyecto.
+
+### 6.1 Modelos JSON Estandarizados
+
+| Tópico | Clase / POJO | Microservicio | Formato JSON / Atributos |
+| :--- | :--- | :--- | :--- |
+| **`academic-grades-input`** | `NotaEvento.java` | `notas_service`, `kafka_service` | `{"id": 1, "estudianteId": 101, "asignatura": "Arquitectura Cloud", "calificacion": 3.5, "fecha": "2026-11-03T..."}` |
+| **`academic-alerts-output`** | `AlertaAcademica.java` | `kafka_service` | `{"estudianteId": 101, "asignatura": "Arquitectura Cloud", "calificacion": 3.2, "mensajeAlerta": "Alerta Temprana: ...", "fechaAlerta": "2026-11-03T..."}` |
+| **`comentarios-academicos-topic`** | `ComentarioEvento.java` | `comentarios_service`, `kafka_service` | `{"id": 1, "entregaId": 5, "usuarioId": 3, "textoComentario": "Excelente trabajo", "fechaCreacion": "2026-11-03T...", "tipoComentario": "FELICITACION"}` |
+
+---
+
+### 6.2 Prueba End-to-End del Tópico 2: Creación de Comentario
+
+1. **Enviar petición POST al endpoint de comentarios**:
+```bash
+curl -X POST "http://localhost:8092/api/v1/comentarios" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idEntrega": 5,
+    "idProfesor": 3,
+    "contenido": "Excelente implementación del pipeline de Kafka Streams",
+    "fechaComentario": "2026-11-03T16:00:00",
+    "tipoComentario": "FELICITACION"
+  }'
+```
+
+2. **Verificar logs del contenedor `comentarios-service`**:
+```bash
+sudo docker compose -f docker-compose.prod.yml logs comentarios-service
+```
+Salida esperada:
+```text
+[KAFKA PRODUCER] ComentarioEvento enviado al tópico 'comentarios-academicos-topic'. Key: 5, Evento: ComentarioEvento(...)
+[KAFKA PRODUCER] Comentario publicado en tópico 'comentarios-academicos-topic' con Key (idEntrega): 5
+```
+
+3. **Verificar en Kafka UI (`http://localhost:8080`)**:
+- Ir a **Topics** -> **`comentarios-academicos-topic`** -> pestaña **Messages**.
+- Podrás observar el mensaje publicado con:
+  - **Key**: `5` (identificador de la entrega).
+  - **Payload**: JSON con el `id`, `entregaId`, `usuarioId`, `textoComentario`, `fechaCreacion` y `tipoComentario`.

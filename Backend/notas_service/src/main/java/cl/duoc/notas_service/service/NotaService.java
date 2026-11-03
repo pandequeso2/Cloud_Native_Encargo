@@ -6,7 +6,6 @@ import cl.duoc.notas_service.dto.NotaEvento;
 import cl.duoc.notas_service.dto.NotasIntegranteDTO;
 import cl.duoc.notas_service.model.Nota;
 import cl.duoc.notas_service.repository.NotaRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,10 +27,7 @@ public class NotaService {
     private IntegranteClient integranteClient;
 
     @Autowired(required = false)
-    private KafkaTemplate<String, String> kafkaTemplate;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${app.kafka.topics.grades-input:academic-grades-input}")
     private String topicGradesInput = "academic-grades-input";
@@ -64,26 +60,32 @@ public class NotaService {
         }
 
         try {
-            Integer idEstudiante = nota.getIdIntegrante();
-            String key = idEstudiante != null ? String.valueOf(idEstudiante) : "unknown";
+            Integer idEstudiante = nota.getEstudianteId();
+            String key = idEstudiante != null ? idEstudiante.toString() : "unknown";
 
-            NotaEvento evento = NotaEvento.builder()
+            NotaEvento notaEvento = NotaEvento.builder()
+                    .id(nota.getIdNota())
                     .idNota(nota.getIdNota())
+                    .estudianteId(idEstudiante)
                     .idEstudiante(idEstudiante)
                     .idIntegrante(idEstudiante)
-                    .nota(nota.getNota())
-                    .calificacion(nota.getNota())
                     .asignatura(nota.getAsignatura() != null && !nota.getAsignatura().isBlank() ? nota.getAsignatura() : "General")
-                    .idPonderacion(nota.getPonderacion() != null ? nota.getPonderacion().getIdPonderacion() : null)
+                    .calificacion(nota.getNota())
+                    .nota(nota.getNota())
+                    .fecha(LocalDateTime.now().toString())
                     .fechaCreacion(LocalDateTime.now().toString())
+                    .idPonderacion(nota.getPonderacion() != null ? nota.getPonderacion().getIdPonderacion() : null)
                     .build();
 
-            String jsonPayload = objectMapper.writeValueAsString(evento);
-            kafkaTemplate.send(topicGradesInput, key, jsonPayload);
-            log.info("Evento NotaEvento enviado exitosamente a Kafka. Tópico: {}, Key (ID Estudiante): {}, Evento: {}",
-                    topicGradesInput, key, jsonPayload);
+            // Envío explícito a Kafka serializado como JSON
+            kafkaTemplate.send(topicGradesInput, key, notaEvento);
+
+            log.info("[KAFKA PRODUCER] Evento NotaEvento enviado a Kafka. Tópico: {}, Key (ID Estudiante): {}, Evento: {}",
+                    topicGradesInput, key, notaEvento);
+            System.out.println("[KAFKA PRODUCER] Publicado en '" + topicGradesInput + "' - Key: " + key + " - Calificación: " + nota.getNota());
         } catch (Exception e) {
             log.error("Error al publicar evento NotaEvento en Kafka para la nota ID: {}", nota.getIdNota(), e);
+            System.err.println("[KAFKA ERROR] Error al publicar nota en Kafka: " + e.getMessage());
         }
     }
 
@@ -104,16 +106,11 @@ public class NotaService {
     }
 
     public NotasIntegranteDTO obtenerNotasConIntegrante(Integer idIntegrante) {
+        IntegranteDTO integranteDTO = integranteClient.obtenerIntegrante(idIntegrante);
         List<Nota> notas = notaRepository.findByIdIntegrante(idIntegrante);
 
-        if (notas == null || notas.isEmpty()) {
-            return null;
-        }
-
-        IntegranteDTO integrante = integranteClient.obtenerIntegrante(idIntegrante);
-
         NotasIntegranteDTO dto = new NotasIntegranteDTO();
-        dto.setIntegrante(integrante);
+        dto.setIntegrante(integranteDTO);
         dto.setNotas(notas);
 
         return dto;

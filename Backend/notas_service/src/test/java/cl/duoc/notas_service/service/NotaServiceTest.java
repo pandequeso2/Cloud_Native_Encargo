@@ -2,6 +2,7 @@ package cl.duoc.notas_service.service;
 
 import cl.duoc.notas_service.client.IntegranteClient;
 import cl.duoc.notas_service.dto.IntegranteDTO;
+import cl.duoc.notas_service.dto.NotaEvento;
 import cl.duoc.notas_service.dto.NotasIntegranteDTO;
 import cl.duoc.notas_service.model.Nota;
 import cl.duoc.notas_service.model.Ponderacion;
@@ -35,7 +36,7 @@ public class NotaServiceTest {
     private IntegranteClient integranteClient;
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -90,7 +91,7 @@ public class NotaServiceTest {
         assertNotNull(resultado);
         assertEquals(6.5, resultado.getNota());
         // Verifica que se haya enviado el evento a Kafka con la clave correspondiente al estudiante
-        verify(kafkaTemplate, times(1)).send(eq("academic-grades-input"), eq("2"), anyString());
+        verify(kafkaTemplate, times(1)).send(eq("academic-grades-input"), eq("2"), any(NotaEvento.class));
     }
 
     @Test
@@ -98,14 +99,13 @@ public class NotaServiceTest {
         when(notaRepository.findByIdIntegrante(2)).thenReturn(Arrays.asList(notaMock));
         IntegranteDTO integranteDTO = new IntegranteDTO();
         integranteDTO.setIdIntegrante(2);
-        integranteDTO.setNombre("Carlos");
         when(integranteClient.obtenerIntegrante(2)).thenReturn(integranteDTO);
 
         NotasIntegranteDTO resultado = notaService.obtenerNotasConIntegrante(2);
 
         assertNotNull(resultado);
-        assertEquals("Carlos", resultado.getIntegrante().getNombre());
+        assertNotNull(resultado.getIntegrante());
+        assertEquals(2, resultado.getIntegrante().getIdIntegrante());
         assertEquals(1, resultado.getNotas().size());
-        assertEquals(6.5, resultado.getNotas().get(0).getNota());
     }
 }

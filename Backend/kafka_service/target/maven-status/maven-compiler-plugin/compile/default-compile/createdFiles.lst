@@ -2,9 +2,11 @@ cl\duoc\kafka_service\model\NotaEvento$Builder.class
 cl\duoc\kafka_service\KafkaServiceApplication.class
 cl\duoc\kafka_service\model\AlertaAcademica$Builder.class
 cl\duoc\kafka_service\service\AlertaService.class
+cl\duoc\kafka_service\model\ComentarioEvento$Builder.class
 cl\duoc\kafka_service\config\KafkaProducerConfig.class
 cl\duoc\kafka_service\topology\PipelineTopology.class
 cl\duoc\kafka_service\controller\LoadTestController.class
+cl\duoc\kafka_service\model\ComentarioEvento.class
 cl\duoc\kafka_service\model\AlertaAcademica.class
 cl\duoc\kafka_service\service\SlowConsumer.class
 cl\duoc\kafka_service\model\NotaEvento.class
