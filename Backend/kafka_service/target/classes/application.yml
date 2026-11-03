@@ -45,3 +45,4 @@ logging:
     root: INFO
     cl.duoc.kafka_service: DEBUG
     org.apache.kafka.streams: INFO
+

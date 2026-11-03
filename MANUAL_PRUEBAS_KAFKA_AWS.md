@@ -642,3 +642,99 @@ echo "=================================================="
 echo "🚀 Levantando todos los contenedores..."
 echo "=================================================="
 sudo docker compose -f docker-compose.prod.yml up -d
+
+
+---
+
+## ⚡ Paso 5: Guía de Tuning de Alto Rendimiento y Pruebas de Carga (Load Testing)
+
+Esta sección describe cómo ejecutar y verificar el **Tuning de Infraestructura y Microservicios** junto con la prueba de **Carga Masiva y Consumer Lag**.
+
+### 5.1 Parámetros de Tuning Implementados
+
+| Componente | Configuración | Valor | Propósito |
+| :--- | :--- | :--- | :--- |
+| **Kafka Broker** (`docker-compose.prod.yml`) | `KAFKA_LOG_RETENTION_HOURS` | `0` | Política de retención agresiva para entornos de prueba |
+| **Kafka Broker** (`docker-compose.prod.yml`) | `KAFKA_LOG_RETENTION_MINUTES` | `5` | Elimina segmentos con más de 5 minutos de antigüedad |
+| **Kafka Broker** (`docker-compose.prod.yml`) | `KAFKA_LOG_RETENTION_BYTES` | `52428800` (50 MB) | Limita el tamaño de log por partición a 50 MB |
+| **Kafka Broker** (`docker-compose.prod.yml`) | `KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS` | `60000` (1 min) | Frecuencia con la que el broker evalúa y purga logs |
+| **Producer** (`KafkaProducerConfig.java`) | `batch.size` | `32768` (32 KB) | Aumenta el buffer de empaquetado de registros antes del envío |
+| **Producer** (`KafkaProducerConfig.java`) | `linger.ms` | `20` | Espera hasta 20 ms para acumular mensajes en lote |
+| **Producer** (`KafkaProducerConfig.java`) | `compression.type` | `snappy` | Compresión de alta velocidad para reducir ancho de banda |
+| **Consumer Lento** (`SlowConsumer.java`) | `Thread.sleep(10)` | `10 ms / msg` | Simula saturación y genera Consumer Lag observable en UI |
+
+---
+
+### 5.2 Ejecución de la Prueba de Carga Masiva
+
+Puedes disparar la prueba enviando `10,000` mensajes en paralelo (`IntStream.parallel()`) directamente al microservicio o a través del API Gateway.
+
+#### Opción A: Directamente a `kafka-service` (Puerto 8094)
+```bash
+curl -X GET "http://localhost:8094/api/v1/kafka/test/start?count=10000"
+```
+
+#### Opción B: A través del API Gateway (Puerto 8095)
+```bash
+curl -X GET "http://localhost:8095/api/v1/kafka/test/start?count=10000"
+```
+
+#### En AWS EC2 (reemplazando por la IP Pública del Backend):
+```bash
+curl -X GET "http://<BACKEND_PUBLIC_IP>:8095/api/v1/kafka/test/start?count=10000"
+```
+
+#### Ejemplo de Respuesta JSON Obtenida:
+```json
+{
+  "status": "SUCCESS",
+  "topic": "sensor-topic",
+  "messagesSent": 10000,
+  "executionTimeMs": 680,
+  "executionTimeSec": 0.68,
+  "throughputMsgsSec": 14705.88,
+  "producerTuning": {
+    "batchSize": "32768 bytes (32 KB)",
+    "lingerMs": 20,
+    "compressionType": "snappy"
+  },
+  "consumerSimulation": {
+    "groupId": "analytics-group",
+    "simulatedLatencyPerMessage": "10 ms",
+    "consumerLagExpected": "Verificable en Kafka UI (puerto 8080)"
+  }
+}
+```
+
+---
+
+### 5.3 Verificación y Visualización de Consumer Lag en Kafka UI
+
+1. Ingresa a la consola web de **Kafka UI**:
+   - Local: `http://localhost:8080`
+   - AWS EC2: `http://<BACKEND_PUBLIC_IP>:8080` (o vía túnel SSH `ssh -i key.pem -L 8080:localhost:8080 ubuntu@<IP>`)
+
+2. Navega al menú **Consumers** (Consumidores) en la barra lateral izquierda.
+3. Selecciona el grupo de consumidores: **`analytics-group`**.
+4. Podrás observar en tiempo real:
+   - **Messages Behind / Lag**: Iniciará en ~`9,900+` mensajes y decrecerá progresivamente debido a la latencia simulada de 10ms.
+   - **Topic**: `sensor-topic`
+   - **Partitions**: Repartición balanceada a través de las 3 particiones creadas.
+
+5. También puedes consultar el avance del consumidor por API:
+```bash
+# Ver cuántos mensajes ha procesado SlowConsumer
+curl -X GET "http://localhost:8094/api/v1/kafka/test/status"
+
+# Reiniciar el contador si deseas iniciar otra prueba
+curl -X POST "http://localhost:8094/api/v1/kafka/test/reset"
+```
+
+---
+
+### 5.4 Compatibilidad con el Pipeline Académico Existente
+
+Todos los componentes de tuning y pruebas de carga conviven de forma aislada y no invasiva:
+- Los tópicos **`academic-grades-input`** y **`academic-alerts-output`** siguen procesando calificaciones y alertas tempranas de notas (< 4.0) de forma independiente.
+- El tópico **`sensor-topic`** maneja la carga masiva y métricas de throughput.
+- El bean `KafkaTemplate<String, String>` tuned optimiza también el rendimiento de publicación de calificaciones en `/api/v1/kafka/publicar-nota`.

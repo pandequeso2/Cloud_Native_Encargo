@@ -1,1 +1,3 @@
+cl\duoc\kafka_service\controller\LoadTestControllerTest.class
 cl\duoc\kafka_service\topology\PipelineTopologyTest.class
+cl\duoc\kafka_service\service\SlowConsumerTest.class
