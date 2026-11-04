@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/trabajos', label: 'Trabajos' },
   { to: '/entregas', label: 'Entregas' },
   { to: '/crear-nota', label: 'Streaming Notas (Kafka)' },
+  { to: '/comentarios', label: 'Comentarios (Kafka)' },
   { to: '/rabbitmq', label: 'RabbitMQ & DLQ' },
 ];
 

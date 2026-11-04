@@ -17,7 +17,7 @@ import java.util.Optional;
 @Service
 public class ComentarioService {
 
-    private static final String DEFAULT_TOPIC = "comentarios-academicos-topic";
+    public static final String DEFAULT_TOPIC = "comentarios-academicos-topic";
 
     @Autowired
     private ComentarioRepository repository;
@@ -37,6 +37,19 @@ public class ComentarioService {
     }
 
     public Comentario guardar(Comentario comentario) {
+        if (comentario.getFechaComentario() == null) {
+            comentario.setFechaComentario(LocalDateTime.now());
+        }
+        if (comentario.getTipoComentario() == null) {
+            comentario.setTipoComentario(Comentario.TipoComentario.CONSULTA);
+        }
+        if (comentario.getIdProfesor() == null) {
+            comentario.setIdProfesor(1);
+        }
+        if (comentario.getIdEntrega() == null) {
+            comentario.setIdEntrega(1);
+        }
+
         Comentario guardado = repository.save(comentario);
 
         // Publicar evento en Kafka al crear un nuevo comentario usando entregaId como Key
@@ -68,11 +81,11 @@ public class ComentarioService {
 
             kafkaTemplate.send(topicComentarios, key, evento);
 
-            log.info("[KAFKA PRODUCER] ComentarioEvento enviado al tópico '{}'. Key: {}, Evento: {}",
+            log.info("[KAFKA PRODUCER - comentarios_service] Evento ComentarioEvento publicado exitosamente en el tópico '{}'. Key (entregaId): {}, Payload: {}",
                     topicComentarios, key, evento);
             System.out.println("[KAFKA PRODUCER] Comentario publicado en tópico '" + topicComentarios + "' con Key (idEntrega): " + key);
         } catch (Exception e) {
-            log.error("Error al publicar ComentarioEvento en Kafka para ID: {}", comentario.getIdComentario(), e);
+            log.error("[KAFKA PRODUCER - comentarios_service] Error al publicar ComentarioEvento en Kafka para ID: {}", comentario.getIdComentario(), e);
             System.err.println("[KAFKA ERROR] Error al publicar comentario en Kafka: " + e.getMessage());
         }
     }
@@ -80,6 +93,12 @@ public class ComentarioService {
     public Comentario actualizar(Integer id, Comentario comentario) {
         if (repository.existsById(id)) {
             comentario.setIdComentario(id);
+            if (comentario.getFechaComentario() == null) {
+                comentario.setFechaComentario(LocalDateTime.now());
+            }
+            if (comentario.getTipoComentario() == null) {
+                comentario.setTipoComentario(Comentario.TipoComentario.CONSULTA);
+            }
             return repository.save(comentario);
         }
         throw new RuntimeException("Comentario no encontrado");

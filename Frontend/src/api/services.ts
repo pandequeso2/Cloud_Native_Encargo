@@ -33,6 +33,16 @@ export interface NuevoTrabajo {
 
 export type NuevaEntrega = Omit<Entrega, 'idEntrega'>;
 
+export interface NuevoComentarioPayload {
+  entregaId: number;
+  usuarioId: number;
+  textoComentario: string;
+  idEntrega?: number;
+  idProfesor?: number;
+  contenido?: string;
+  tipoComentario?: string;
+}
+
 export const gruposApi = {
   listar: () => httpClient.get<Grupo[]>('/api/v1/grupos').then((r) => r.data),
   conIntegrantes: (idGrupo: number) =>
@@ -72,10 +82,23 @@ export const entregasApi = {
 };
 
 export const comentariosApi = {
+  listar: () => httpClient.get<Comentario[]>('/api/v1/comentarios').then((r) => r.data),
   porEntrega: (idEntrega: number) =>
     httpClient
       .get<Comentario[]>('/api/v1/comentarios')
-      .then((r) => r.data.filter((c) => c.idEntrega === idEntrega)),
+      .then((r) => r.data.filter((c) => (c.idEntrega ?? c.entregaId) === idEntrega)),
+  crear: (nuevo: NuevoComentarioPayload) =>
+    httpClient
+      .post<Comentario>('/api/v1/comentarios', {
+        entregaId: Number(nuevo.entregaId),
+        idEntrega: Number(nuevo.entregaId),
+        usuarioId: Number(nuevo.usuarioId),
+        idProfesor: Number(nuevo.usuarioId),
+        textoComentario: nuevo.textoComentario,
+        contenido: nuevo.textoComentario,
+        tipoComentario: nuevo.tipoComentario ?? 'CONSULTA',
+      })
+      .then((r) => r.data),
 };
 
 export const integrantesApi = {
@@ -95,6 +118,7 @@ export const profesoresApi = {
     httpClient.put<Profesor>(`/api/v1/profesores/${id}`, profesor).then((r) => r.data),
   eliminar: (id: number) => httpClient.delete<void>(`/api/v1/profesores/${id}`).then((r) => r.data),
 };
+
 export interface NuevaNota {
   nota: number;
   idIntegrante: number;
@@ -118,11 +142,13 @@ export interface NotaResponse {
 export interface AlertaAcademicaDto {
   idAlerta: string;
   idEstudiante: number;
+  estudianteId?: number;
   idNota?: number;
   asignatura: string;
   calificacion: number;
   nivelAlerta: string;
   mensaje: string;
+  mensajeAlerta?: string;
   fechaAlerta: string;
 }
 

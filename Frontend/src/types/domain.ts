@@ -58,11 +58,16 @@ export type EstadoEntrega = 'PENDIENTE' | 'ENTREGADO' | 'EVALUADO' | 'ATRASADO';
 
 export interface Comentario {
   idComentario: number;
+  id?: number;
   idEntrega: number;
+  entregaId?: number;
   idProfesor: number;
+  usuarioId?: number;
   contenido: string;
+  textoComentario?: string;
   fechaComentario: string;
-  tipoComentario: string;
+  fechaCreacion?: string;
+  tipoComentario?: string;
 }
 
 export interface Nota {

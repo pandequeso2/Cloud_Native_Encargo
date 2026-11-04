@@ -8,6 +8,7 @@ import { Trabajos } from './pages/Trabajos';
 import { Entregas } from './pages/Entregas';
 import { RabbitMQDashboard } from './pages/RabbitMQDashboard';
 import { CrearNota } from './pages/CrearNota';
+import { GestionComentarios } from './components/GestionComentarios';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { Layout } from './components/Layout';
 
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/entregas" element={<Entregas />} />
                 <Route path="/crear-nota" element={<CrearNota />} />
                 <Route path="/notas/crear" element={<CrearNota />} />
+                <Route path="/comentarios" element={<GestionComentarios />} />
                 <Route path="/rabbitmq" element={<RabbitMQDashboard />} />
               </Routes>
             </Layout>

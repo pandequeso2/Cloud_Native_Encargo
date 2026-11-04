@@ -29,7 +29,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      retries: 3
       properties:
+        enable.idempotence: true
+        acks: all
         spring.json.add.type.headers: false
 
 eureka:
@@ -51,12 +54,7 @@ management:
     env:
       enabled: true
 
-springdoc:
-  api-docs:
-    path: /api/v1/comentarios/v3/api-docs
-
 app:
   kafka:
     topics:
       comentarios: comentarios-academicos-topic
-
