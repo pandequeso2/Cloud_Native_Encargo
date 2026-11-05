@@ -4,7 +4,7 @@ Sistema académico desarrollado bajo una arquitectura de microservicios, como pa
 
 El proyecto permite gestionar distintos aspectos de un entorno académico, incluyendo integrantes, grupos, asignaturas, secciones, profesores, roles, trabajos, entregas, notas y comentarios.
 
-La solución está compuesta por un Frontend desarrollado con React + TypeScript y un Backend basado en microservicios con Spring Boot, utilizando Spring Cloud Netflix Eureka para el descubrimiento de servicios y Spring Cloud Gateway como punto de entrada a la API.
+La solución está compuesta por un Frontend desarrollado con React + TypeScript y un Backend basado en microservicios con Spring Boot, utilizando Spring Cloud Netflix Eureka para el descubrimiento de servicios y Spring Cloud Gateway como punto de entrada a la API. Incorpora **Apache Kafka y Kafka Streams** para el procesamiento de eventos en tiempo real y **RabbitMQ** para mensajería asíncrona.
 
 ## 📋 Tabla de contenidos
 
@@ -17,13 +17,14 @@ La solución está compuesta por un Frontend desarrollado con React + TypeScript
 - [Configuración](#-configuración)
 - [Ejecución con Docker](#-ejecución-con-docker)
 - [Frontend](#-frontend)
-- [Autenticación](#-autenticación)
+- [Autenticación (Microsoft Entra ID)](#-autenticación-microsoft-entra-id)
+- [Apache Kafka y Kafka Streams](#-apache-kafka-y-kafka-streams)
 - [RabbitMQ y Mensajería](#-rabbitmq-y-mensajería)
 - [Endpoints y puertos](#-endpoints-y-puertos)
 - [Pruebas](#-pruebas)
-- [Terraform](#-terraform)
-- [Despliegue (CI/CD)](#-despliegue-cicd)
-- [Inicio rápido](#-inicio-rápido)
+- [Terraform (Infraestructura como Código)](#-terraform-infraestructura-como-código)
+- [Despliegue y Operación en AWS](#-despliegue-y-operación-en-aws)
+- [Inicio rápido (Entorno Local)](#-inicio-rápido-entorno-local)
 - [Autores](#-autores)
 
 ## 📖 Descripción
@@ -40,11 +41,12 @@ El proyecto también incorpora:
 - 🗄️ Base de datos MySQL.
 - 🔎 Service Discovery mediante Eureka.
 - 🚪 API Gateway.
-- 🐰 Mensajería asíncrona con RabbitMQ (Direct Exchange, Dead Letter Queues y gestión dinámica de recursos).
+- 📨 Procesamiento de eventos en tiempo real con **Apache Kafka y Kafka Streams** (alertas académicas, comentarios y pruebas de carga).
+- 🐰 Mensajería asíncrona con **RabbitMQ** (Direct Exchange, Dead Letter Queues y gestión dinámica de recursos).
 - 🔐 Autenticación mediante Microsoft Entra ID.
 - ⚛️ Frontend SPA con React y TypeScript.
 - 🏗️ Infraestructura preparada mediante Terraform.
-- 🧪 Pruebas mediante Postman, Swagger/OpenAPI y Eureka Dashboard.
+- 🧪 Pruebas mediante Postman, Swagger/OpenAPI, Eureka Dashboard y Kafka UI.
 
 ## 🏗️ Arquitectura
 
@@ -69,32 +71,33 @@ La arquitectura general del sistema puede representarse de la siguiente manera:
                          │      :8095          │
                          └──────────┬──────────┘
                                     │
-                ┌───────────────────┼───────────────────┐
-                │                   │                   │
-                ▼                   ▼                   ▼
-        ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-        │ Microservicio│    │ Microservicio│    │ Microservicio│
-        │ de Grupos    │    │ de Trabajos  │    │ de Entregas  │
-        └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
-               │                   │                   │
-               └───────────────────┼───────────────────┘
-                                   │
-                                   ▼
-                         ┌─────────────────────┐
-                         │        MySQL        │
-                         │       :3306         │
-                         └─────────────────────┘
+        ┌───────────────────┬───────┴───────┬───────────────────┐
+        │                   │               │                   │
+        ▼                   ▼               ▼                   ▼
+┌──────────────┐    ┌──────────────┐ ┌──────────────┐   ┌──────────────┐
+│ Microservicio│    │ Microservicio│ │ Microservicio│   │ Kafka Service│
+│ de Grupos    │    │ de Trabajos  │ │ de Entregas  │   │  (Streams)   │
+└──────┬───────┘    └──────┬───────┘ └──────┬───────┘   └──────┬───────┘
+       │                   │                │                   │
+       └───────────────────┼────────────────┘                   │
+                           │                                    │
+                           ▼                                    ▼
+                 ┌─────────────────────┐              ┌─────────────────────┐
+                 │        MySQL        │              │    Apache Kafka     │
+                 │       :3306         │              │   :9092 / :9093     │
+                 └─────────────────────┘              └─────────────────────┘
 
-                         ┌─────────────────────┐
-                         │       Eureka        │
-                         │ Service Discovery   │
-                         │       :8761         │
-                         └─────────────────────┘
+                 ┌─────────────────────┐              ┌─────────────────────┐
+                 │       Eureka        │              │      Kafka UI       │
+                 │ Service Discovery   │              │       :8080         │
+                 │       :8761         │              └─────────────────────┘
+                 └─────────────────────┘
 
-                         ┌─────────────────────┐
-                         │      RabbitMQ       │
-                         │   :5672 / :15672    │
-                         └─────────────────────┘
+                 ┌─────────────────────┐
+                 │      RabbitMQ       │
+                 │  Clúster (2 nodos)  │
+                 │  :5672-5673/15672-3 │
+                 └─────────────────────┘
 ```
 
 ### 🔀 Flujo de una solicitud
@@ -108,7 +111,15 @@ La arquitectura general del sistema puede representarse de la siguiente manera:
 7. Los servicios utilizan MySQL para la persistencia de datos.
 8. La respuesta retorna al Frontend a través del Gateway.
 
-### 🐰 Flujo de un mensaje asíncrono
+### 📨 Flujo de un evento Kafka
+
+1. El Frontend invoca un endpoint del microservicio correspondiente (`notas_service` o `comentarios_service`) a través del API Gateway.
+2. El microservicio publica un evento (`NotaEvento` o `ComentarioEvento`) a un topic de Kafka.
+3. `kafka_service` consume el evento con una topología de **Kafka Streams** (`PipelineTopology`).
+4. Para notas, filtra las calificaciones menores a 4.0 y emite una `AlertaAcademica` al topic `academic-alerts-output`.
+5. El Frontend recibe las alertas en tiempo real y las muestra al usuario.
+
+### 🐰 Flujo de un mensaje asíncrono (RabbitMQ)
 
 1. El Frontend invoca un endpoint de `rabbitmq_service` a través del API Gateway.
 2. El microservicio publica el mensaje en un exchange de RabbitMQ.
@@ -126,6 +137,8 @@ La arquitectura general del sistema puede representarse de la siguiente manera:
 - Spring Cloud Netflix Eureka
 - Spring Cloud Gateway
 - Spring AMQP (RabbitMQ)
+- **Apache Kafka**
+- **Kafka Streams**
 - springdoc OpenAPI (Swagger)
 - Maven
 - MySQL
@@ -144,7 +157,9 @@ La arquitectura general del sistema puede representarse de la siguiente manera:
 - AWS (EC2, RDS MySQL, Elastic IPs, Security Groups)
 - Terraform (Infraestructura como Código - IaC)
 - Docker & Docker Compose
-- RabbitMQ 4.x
+- RabbitMQ 4.x (clúster de 2 nodos)
+- **Apache Kafka & Kafka UI**
+
 ## 📁 Estructura del proyecto
 
 ```
@@ -158,6 +173,7 @@ Cloud_Native_Encargo/
 │   ├── entregas_service/
 │   ├── grupos_service/
 │   ├── integrantes_service/
+│   ├── kafka_service/
 │   ├── notas_service/
 │   ├── profesores_service/
 │   ├── rabbitmq_service/
@@ -192,6 +208,7 @@ Cloud_Native_Encargo/
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 ├── rabbitmq.conf
+├── MANUAL_PRUEBAS_KAFKA_AWS.md
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -201,25 +218,28 @@ Cloud_Native_Encargo/
 
 El Backend está compuesto por los siguientes servicios:
 
-| Servicio | Descripción |
-|---|---|
-| `eureka-server` | Registro y descubrimiento de servicios |
-| `gateway` | Punto de entrada y enrutamiento de la API |
-| `asignaturas_service` | Gestión de asignaturas |
-| `comentarios_service` | Gestión de comentarios |
-| `entregas_service` | Gestión de entregas |
-| `grupos_service` | Gestión de grupos |
-| `integrantes_service` | Gestión de integrantes/estudiantes |
-| `notas_service` | Gestión de notas |
-| `profesores_service` | Gestión de profesores |
-| `rabbitmq_service` | Mensajería asíncrona: exchanges, colas, DLQ y consumidores |
-| `roles_service` | Gestión de roles y permisos |
-| `secciones_service` | Gestión de secciones |
-| `trabajos_service` | Gestión de trabajos/tareas |
+| Servicio | Puerto | Descripción |
+|---|---|---|
+| `eureka-server` | 8761 | Registro y descubrimiento de servicios |
+| `gateway` | 8095 | Punto de entrada y enrutamiento de la API |
+| `asignaturas_service` | 8084 | Gestión de asignaturas |
+| `comentarios_service` | 8092 | Gestión de comentarios (publica `ComentarioEvento` a Kafka) |
+| `entregas_service` | 8091 | Gestión de entregas |
+| `grupos_service` | 8086 | Gestión de grupos |
+| `integrantes_service` | 8087 | Gestión de integrantes/estudiantes |
+| `kafka_service` | 8094 | Pipeline de Kafka Streams, alertas académicas y pruebas de carga |
+| `notas_service` | 8083 | Gestión de notas (publica `NotaEvento` a Kafka) |
+| `profesores_service` | 8085 | Gestión de profesores |
+| `rabbitmq_service` | 8093 | Mensajería asíncrona: exchanges, colas, DLQ y consumidores |
+| `roles_service` | 8088 | Gestión de roles y permisos |
+| `secciones_service` | 8089 | Gestión de secciones |
+| `trabajos_service` | 8090 | Gestión de trabajos/tareas |
 
 Cada microservicio se encuentra separado y puede registrarse en Eureka para ser localizado por el resto de la arquitectura.
 
-Además, el sistema incluye el broker **RabbitMQ** (`rabbitmq` en Docker Compose), que no es un microservicio Spring Boot sino un servicio de infraestructura de mensajería.
+Además, el sistema incluye:
+- El broker **RabbitMQ** (clúster de 2 nodos en Docker Compose), servicio de infraestructura de mensajería.
+- El broker **Apache Kafka** con **Kafka UI**, servicio de infraestructura para procesamiento de eventos en tiempo real.
 
 ## 📦 Requisitos
 
@@ -233,7 +253,8 @@ Para ejecutar el proyecto localmente se recomienda contar con:
 - Docker Compose
 - Una aplicación registrada en Microsoft Entra ID para la autenticación del Frontend y Backend.
 
-RabbitMQ **no requiere instalación local**, ya que se levanta como contenedor mediante `docker compose`.
+RabbitMQ y Kafka **no requieren instalación local**, ya que se levantan como contenedores mediante `docker compose`.
+
 ## ⚙️ Configuración
 
 ### Variables de entorno
@@ -326,7 +347,7 @@ Configurar las variables necesarias para Microsoft Entra ID antes de iniciar los
 Los `Dockerfile` del Backend utilizan el `.jar` ya compilado, por lo que se deben empaquetar los servicios previamente. Desde la carpeta `Backend/`:
 
 ```powershell
-"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
+"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service", "kafka_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
 ```
 
 ### 4. Construir y ejecutar
@@ -350,7 +371,13 @@ docker compose logs -f
 Para ver solo los logs de RabbitMQ:
 
 ```bash
-docker compose logs -f rabbitmq rabbitmq-service
+docker compose logs -f rabbitmq-1 rabbitmq-2 rabbitmq-service
+```
+
+Para ver solo los logs de Kafka:
+
+```bash
+docker compose logs -f kafka kafka-service
 ```
 
 ### 5. Detener el proyecto
@@ -365,7 +392,7 @@ Para detener los contenedores y eliminar también los volúmenes:
 docker compose down -v
 ```
 
-> ⚠️ `docker compose down -v` elimina los volúmenes asociados, por lo que puede provocar pérdida de los datos almacenados en MySQL **y en RabbitMQ** (`rabbitmq_data`).
+> ⚠️ `docker compose down -v` elimina los volúmenes asociados, por lo que puede provocar pérdida de los datos almacenados en MySQL, **RabbitMQ** y **Kafka**.
 
 ## 🖥️ Frontend
 
@@ -407,11 +434,16 @@ npm run preview
 
 | Ruta | Descripción |
 |---|---|
+| `/` | Dashboard (resumen general) |
+| `/login` | Login (Microsoft Entra ID) |
+| `/grupos` | Gestión de grupos |
+| `/grupos/:idGrupo` | Detalle de grupo |
+| `/integrantes` | Gestión de integrantes |
 | `/trabajos` | Gestión de trabajos |
 | `/entregas` | Gestión de entregas |
+| `/crear-nota` (también `/notas/crear`) | Streaming Notas (Kafka): registro de notas + alertas en tiempo real |
+| `/comentarios` | Comentarios (Kafka): registro de comentarios + feed en tiempo real |
 | `/rabbitmq` | Dashboard de RabbitMQ, DLQ y RabbitAdmin |
-
-## 🔐 Autenticación
 
 ## 🔐 Autenticación (Microsoft Entra ID)
 
@@ -444,7 +476,7 @@ API Gateway (Spring Cloud Gateway :8095)
    │ 5. Valida Issuer (v1 y v2) y Audience
    │ 6. Inyecta claims y contexto de usuario (X-User-Email, X-User-Role)
    ▼
-Microservicios de Backend (:8083 - :8092)
+Microservicios de Backend (:8083 - :8094)
 ```
 
 ### 3. Mapeo de Roles Institucionales
@@ -457,9 +489,82 @@ El API Gateway mapea automáticamente los roles de seguridad a partir del correo
 
 > ℹ️ Las rutas bajo `/api/v1/rabbitmq/**` están declaradas como públicas en el `SecurityConfig` del Gateway, por lo que el dashboard de RabbitMQ puede consultarse sin un token válido.
 
+## 📨 Apache Kafka y Kafka Streams
+
+El proyecto utiliza **Apache Kafka** como plataforma de streaming de eventos para el procesamiento en tiempo real de notas y comentarios académicos. El microservicio `kafka_service` implementa una topología de **Kafka Streams** para el análisis y filtrado de datos.
+
+### Arquitectura de Kafka
+
+```
+┌──────────────────┐    ┌──────────────────────────┐    ┌───────────────────┐
+│  notas_service   │───▶│ Topic: academic-grades-  │───▶│   kafka_service   │
+│ (Publica         │    │        input             │    │  (Kafka Streams)  │
+│  NotaEvento)     │    └──────────────────────────┘    │                   │
+└──────────────────┘                                    │  PipelineTopology │
+                                                        │  Filtra nota < 4.0│
+┌──────────────────┐    ┌──────────────────────────┐    │                   │
+│ comentarios_     │───▶│ Topic: comentarios-      │    └────────┬──────────┘
+│ service          │    │  academicos-topic         │             │
+│ (Publica         │    └──────────────────────────┘             ▼
+│  ComentarioEvento│                                   ┌──────────────────────┐
+└──────────────────┘                                   │ Topic: academic-     │
+                                                       │  alerts-output       │
+                                                       │ (AlertaAcademica)    │
+                                                       └──────────────────────┘
+```
+
+### Topics de Kafka
+
+| Topic | Productor | Consumidor | Descripción |
+|---|---|---|---|
+| `academic-grades-input` | `notas_service` | `kafka_service` (Kafka Streams) | Recibe eventos de tipo `NotaEvento` con las calificaciones registradas |
+| `academic-alerts-output` | `kafka_service` (Kafka Streams) | Frontend (tiempo real) | Emite alertas académicas (`AlertaAcademica`) para notas menores a 4.0 |
+| `comentarios-academicos-topic` | `comentarios_service` | Frontend (tiempo real) | Recibe eventos de tipo `ComentarioEvento` con los comentarios registrados |
+| `sensor-topic` | Endpoint de prueba de carga | `SlowConsumer` | Topic utilizado para pruebas de carga y demostración de consumer lag |
+
+### Pipeline de Kafka Streams (`PipelineTopology.java`)
+
+La topología de Kafka Streams realiza el siguiente procesamiento:
+
+1. **Lee** del topic `academic-grades-input` los eventos `NotaEvento`.
+2. **Filtra** las calificaciones que son menores a 4.0.
+3. **Transforma** los eventos filtrados en objetos `AlertaAcademica`.
+4. **Escribe** las alertas en el topic `academic-alerts-output`.
+
+### Pruebas de carga con Consumer Lag
+
+El `kafka_service` incluye un endpoint para pruebas de carga que demuestra el comportamiento del consumer lag en Kafka:
+
+```bash
+# Iniciar una prueba de carga con N mensajes
+curl -X POST "http://localhost:8095/api/v1/kafka/test/start?count=1000"
+```
+
+Este endpoint publica mensajes al topic `sensor-topic`, los cuales son consumidos por un `SlowConsumer` que simula un procesamiento lento, permitiendo observar el consumer lag en **Kafka UI** (`http://localhost:8080`).
+
+### Kafka UI
+
+La interfaz de **Kafka UI** está disponible en el puerto `8080` y permite:
+
+- Visualizar los topics y sus particiones.
+- Inspeccionar los mensajes publicados en tiempo real.
+- Monitorear los consumer groups y el consumer lag.
+- Administrar la configuración del clúster de Kafka.
+
+> 📄 Para instrucciones detalladas sobre las pruebas del pipeline de Kafka en AWS, consultar el archivo **`MANUAL_PRUEBAS_KAFKA_AWS.md`** en la raíz del repositorio.
+
 ## 🐰 RabbitMQ y Mensajería
 
 El microservicio `rabbitmq_service` implementa comunicación asíncrona usando **Spring AMQP** sobre un broker **RabbitMQ**. Se registra en Eureka con el nombre `rabbitmq-service` y es enrutado por el Gateway bajo el prefijo `/api/v1/rabbitmq/**`.
+
+### Clúster de RabbitMQ
+
+El sistema despliega un clúster de **2 nodos** de RabbitMQ con descubrimiento de pares clásico:
+
+| Nodo | Puerto AMQP | Puerto Management UI |
+|---|---|---|
+| `rabbitmq-1` | 5672 | 15672 |
+| `rabbitmq-2` | 5673 | 15673 |
 
 ### Topología de exchanges, colas y bindings
 
@@ -571,8 +676,12 @@ La ruta `/rabbitmq` (`RabbitMQDashboard.tsx`) permite:
 | API Gateway | 8095 | http://localhost:8095 |
 | Eureka Server | 8761 | http://localhost:8761 |
 | MySQL | 3306 | localhost:3306 |
-| **RabbitMQ (broker AMQP)** | **5672** | `amqp://localhost:5672` |
-| **RabbitMQ (UI de administración)** | **15672** | http://localhost:15672 |
+| **Apache Kafka** | **9092 / 9093** | `localhost:9092` |
+| **Kafka UI** | **8080** | http://localhost:8080 |
+| **RabbitMQ nodo 1 (broker AMQP)** | **5672** | `amqp://localhost:5672` |
+| **RabbitMQ nodo 1 (UI de administración)** | **15672** | http://localhost:15672 |
+| **RabbitMQ nodo 2 (broker AMQP)** | **5673** | `amqp://localhost:5673` |
+| **RabbitMQ nodo 2 (UI de administración)** | **15673** | http://localhost:15673 |
 
 ### Microservicios
 
@@ -589,6 +698,7 @@ La ruta `/rabbitmq` (`RabbitMQDashboard.tsx`) permite:
 | Entregas | 8091 | localhost:8091 |
 | Comentarios | 8092 | localhost:8092 |
 | **RabbitMQ Service** | **8093** | localhost:8093 |
+| **Kafka Service** | **8094** | localhost:8094 |
 
 En un despliegue normal, las peticiones del Frontend deberían realizarse a través del API Gateway, en lugar de acceder directamente a cada microservicio.
 
@@ -604,6 +714,7 @@ Las herramientas utilizadas incluyen:
 - Swagger / OpenAPI
 - Eureka Dashboard
 - RabbitMQ Management UI
+- Kafka UI
 - Navegador web
 
 Entre las operaciones que pueden probarse se encuentran:
@@ -631,7 +742,19 @@ Entre las operaciones que pueden probarse se encuentran:
 | Purgar colas | `orders.queue`, `orders.dlq` y `all_logs_queue` quedan vacías |
 | Pausar / reanudar listener | `order-listener` se detiene y se reinicia correctamente |
 
-> 💡 Para observar el comportamiento de las colas en detalle, se recomienda revisar la UI de administración en http://localhost:15672 y los logs del contenedor con `docker compose logs -f rabbitmq-service`.
+### Pruebas específicas de Apache Kafka
+
+| Caso de prueba | Verificación |
+|---|---|
+| Registrar una nota ≥ 4.0 | El evento `NotaEvento` se publica en `academic-grades-input` y **no** genera alerta |
+| Registrar una nota < 4.0 | El pipeline de Kafka Streams filtra la nota y emite una `AlertaAcademica` en `academic-alerts-output` |
+| Registrar un comentario | El evento `ComentarioEvento` se publica en `comentarios-academicos-topic` y se muestra en el feed en tiempo real |
+| Prueba de carga (consumer lag) | `POST /api/v1/kafka/test/start?count=N` genera mensajes en `sensor-topic`; el `SlowConsumer` acumula consumer lag observable en Kafka UI |
+| Verificar topics en Kafka UI | Los topics `academic-grades-input`, `academic-alerts-output`, `comentarios-academicos-topic` y `sensor-topic` son visibles en `http://localhost:8080` |
+
+> 📄 El manual detallado de pruebas del pipeline de Kafka en AWS se encuentra en **`MANUAL_PRUEBAS_KAFKA_AWS.md`**.
+
+> 💡 Para observar el comportamiento de las colas en detalle, se recomienda revisar la UI de administración de RabbitMQ en http://localhost:15672, Kafka UI en http://localhost:8080 y los logs de los contenedores con `docker compose logs -f`.
 
 El Backend también contiene un documento específico con el plan de pruebas:
 
@@ -651,7 +774,7 @@ Terraform/
 ### Componentes desplegados en AWS
 
 1. **Red y Seguridad (VPC y Security Groups):**
-   - Reglas de ingreso seguras para puertos `80` (HTTP), `443` (HTTPS), `8095` (Gateway), `8761` (Eureka), `15672` (RabbitMQ UI) y `22` (SSH).
+   - Reglas de ingreso seguras para puertos `80` (HTTP), `443` (HTTPS), `8095` (Gateway), `8761` (Eureka), `15672` (RabbitMQ Management UI), `8080` (Kafka UI) y `22` (SSH).
 2. **Base de Datos Gestionada:**
    - Instancia **AWS RDS MySQL** dedicada para la persistencia de datos de los microservicios.
 3. **Instancia EC2 Frontend (t2.micro):**
@@ -660,7 +783,7 @@ Terraform/
    - Cuenta con **terminación SSL autofirmada (puerto 443 HTTPS)** y proxy inverso en `location /api/` que reenvía el tráfico internamente hacia el API Gateway, eliminando por completo errores de *Mixed Content* y *CORS*.
 4. **Instancia EC2 Backend (t2.medium):**
    - Asociada a una **Elastic IP** fija.
-   - Ejecuta todos los microservicios de Spring Boot, Eureka Server, clúster de RabbitMQ 4.x y el API Gateway mediante Docker Compose.
+   - Ejecuta todos los microservicios de Spring Boot, Eureka Server, clúster de RabbitMQ 4.x, Apache Kafka, Kafka UI y el API Gateway mediante Docker Compose.
 
 ### Automatización completa vía `user_data`
 
@@ -710,16 +833,18 @@ terraform apply -auto-approve
                        │  ┌──────────────────────────────────────────┐  │
                        │  │  Spring Cloud Gateway (:8095)            │  │
                        │  │  (Valida JWT con Microsoft Entra ID)     │  │
-                       │  └───────┬──────────────────────────┬───────┘  │
-                       │          │                          │          │
-                       │          ▼                          ▼          │
-                       │  ┌──────────────┐            ┌──────────────┐  │
-                       │  │ Microservicios│           │ Clúster      │  │
-                       │  │ Spring Boot  │            │ RabbitMQ 4.x │  │
-                       │  │ (:8083-:8092)│            │ (:5672/15672)│  │
-                       │  └───────┬──────┘            └──────────────┘  │
-                       │          │ Eureka Server (:8761)               │
-                       └──────────┼─────────────────────────────────────┘
+                       │  └───────┬──────────────┬───────────┬──────┘  │
+                       │          │              │           │         │
+                       │          ▼              ▼           ▼         │
+                       │  ┌──────────────┐ ┌──────────┐ ┌──────────┐  │
+                       │  │ Microservicios│ │ Clúster  │ │  Apache  │  │
+                       │  │ Spring Boot  │ │ RabbitMQ │ │  Kafka   │  │
+                       │  │(:8083-:8094) │ │  4.x     │ │ + Kafka  │  │
+                       │  │              │ │(:5672-73/│ │   UI     │  │
+                       │  │              │ │ 15672-73)│ │  (:8080) │  │
+                       │  └───────┬──────┘ └──────────┘ └──────────┘  │
+                       │          │ Eureka Server (:8761)              │
+                       └──────────┼────────────────────────────────────┘
                                   │
                                   ▼
                        ┌────────────────────────────────────────────────┐
@@ -727,6 +852,25 @@ terraform apply -auto-approve
                        │              Base de datos :3306               │
                        └────────────────────────────────────────────────┘
 ```
+
+## 🚀 Despliegue y Operación en AWS
+
+La solución en producción se orquesta combinando **Terraform (IaC)** para el aprovisionamiento de infraestructura y **Docker Compose** en la instancia Backend:
+
+1. **Aprovisionamiento automatizado:**
+   - Al ejecutar `terraform apply`, AWS crea las instancias EC2, configura las Elastic IPs, levanta RDS MySQL e inicia el script `user_data`.
+   - `user_data` compila automáticamente los microservicios con Maven, configura el daemon de Docker (`8.8.8.8`) y levanta el clúster con `docker-compose.prod.yml`.
+2. **Actualización de servicios en Backend:**
+   - Si se requiere actualizar un microservicio directamente en la EC2 Backend:
+   ```bash
+   cd /home/ubuntu/app/Backend/<servicio>
+   mvn clean package -DskipTests
+   sudo docker compose -f /home/ubuntu/app/docker-compose.prod.yml up -d --build --no-deps <nombre-servicio>
+   ```
+3. **Persistencia y Resiliencia:**
+   - La base de datos RDS mantiene los datos independientemente del ciclo de vida de las EC2.
+   - Las colas y configuraciones de RabbitMQ persisten en volúmenes Docker dedicados (`rabbitmq_data_1` y `rabbitmq_data_2`).
+   - Los datos de Kafka persisten en sus volúmenes Docker correspondientes.
 
 ## 🚀 Inicio rápido (Entorno Local)
 
@@ -749,7 +893,7 @@ ENTRA_AUDIENCE=api://cdde4875-2f04-4a9e-b27c-2e1ad93c9366
 Desde la carpeta `Backend/`:
 
 ```powershell
-"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
+"eureka-server", "gateway", "notas_service", "asignaturas_service", "profesores_service", "grupos_service", "integrantes_service", "roles_service", "secciones_service", "trabajos_service", "entregas_service", "comentarios_service", "rabbitmq_service", "kafka_service" | ForEach-Object { Push-Location $_; .\mvnw.cmd clean package -DskipTests; Pop-Location }
 ```
 
 ### Paso 3: Levantar los contenedores
@@ -765,31 +909,16 @@ docker compose up -d --build
 | **Local** | Frontend SPA | `http://localhost:5173` |
 | **Local** | Eureka Dashboard | `http://localhost:8761` |
 | **Local** | API Gateway | `http://localhost:8095` |
-| **Local** | RabbitMQ Management UI | `http://localhost:15672` (usuario: `admin` / pass: `admin123`) |
+| **Local** | Kafka UI | `http://localhost:8080` |
+| **Local** | RabbitMQ Management UI (nodo 1) | `http://localhost:15672` (usuario: `admin` / pass: `admin123`) |
+| **Local** | RabbitMQ Management UI (nodo 2) | `http://localhost:15673` (usuario: `admin` / pass: `admin123`) |
 | **AWS Producción** | Frontend SPA (HTTPS) | `https://<FRONTEND_EIP>` (ej: `https://184.192.68.199`) |
 | **AWS Producción** | API Gateway | `http://<BACKEND_EIP>:8095` (ej: `http://34.234.18.25:8095`) |
 | **AWS Producción** | Eureka Dashboard | `http://<BACKEND_EIP>:8761` |
+| **AWS Producción** | Kafka UI | `http://<BACKEND_EIP>:8080` |
 | **AWS Producción** | RabbitMQ Management | `http://<BACKEND_EIP>:15672` |
 
 > ℹ️ El dashboard de RabbitMQ dentro de la aplicación requiere autenticación por tratarse de una ruta protegida del Frontend; los endpoints del microservicio (`/api/v1/rabbitmq/**`) son públicos en el Gateway.
-
-## 🚀 Despliegue y Operación en AWS
-
-La solución en producción se orquesta combinando **Terraform (IaC)** para el aprovisionamiento de infraestructura y **Docker Compose** en la instancia Backend:
-
-1. **Aprovisionamiento automatizado:**
-   - Al ejecutar `terraform apply`, AWS crea las instancias EC2, configura las Elastic IPs, levanta RDS MySQL e inicia el script `user_data`.
-   - `user_data` compila automáticamente los microservicios con Maven, configura el daemon de Docker (`8.8.8.8`) y levanta el clúster con `docker-compose.prod.yml`.
-2. **Actualización de servicios en Backend:**
-   - Si se requiere actualizar un microservicio directamente en la EC2 Backend:
-   ```bash
-   cd /home/ubuntu/app/Backend/<servicio>
-   mvn clean package -DskipTests
-   sudo docker compose -f /home/ubuntu/app/docker-compose.prod.yml up -d --build --no-deps <nombre-servicio>
-   ```
-3. **Persistencia y Resiliencia:**
-   - La base de datos RDS mantiene los datos independientemente del ciclo de vida de las EC2.
-   - Las colas y configuraciones de RabbitMQ persisten en volúmenes Docker dedicados (`rabbitmq_data_1` y `rabbitmq_data_2`).
 
 ## 👥 Autores
 
@@ -800,4 +929,3 @@ Proyecto desarrollado para la asignatura Cloud Native.
 - Vicente Garrido
 
 **Repositorio:** [pandequeso2/Cloud_Native_Encargo](https://github.com/pandequeso2/Cloud_Native_Encargo)
-

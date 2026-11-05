@@ -6,7 +6,7 @@
 ## 📑 Tabla de Contenidos
 
 1. [Visión General de la Arquitectura de Eventos](#-visión-general-de-la-arquitectura-de-eventos)
-2. [Paso 1: Despliegue de Infraestructura en AWS (Terraform + Docker)](#1-pasos-de-despliegue-en-aws-terraform--docker)
+2. [Paso 1: Despliegue de Infraestructura en AWS (Terraform + Docker)](#1-despliegue-de-infraestructura-en-aws-terraform--docker)
    - [1.1 Requisitos Previos](#11-requisitos-previos)
    - [1.2 Inicialización y Aplicación con Terraform](#12-inicialización-y-aplicación-con-terraform)
    - [1.3 Extracción de Llave SSH Privada](#13-extracción-de-llave-ssh-privada)
@@ -16,7 +16,7 @@
    - [2.1 Comprobación en Eureka Service Discovery (:8761)](#21-verificación-en-el-servidor-eureka-8761)
    - [2.2 Monitoreo y Validación en Kafka UI (:8080)](#22-acceso-y-monitoreo-en-kafka-ui-puerto-8080)
    - [2.3 Opciones de Conectividad (IP Pública vs. Túnel SSH)](#23-opciones-de-conectividad-ip-pública-vs-túnel-ssh)
-4. [Paso 3: Prueba del Flujo End-to-End Paso a Paso](#3-prueba-del-flujo-end-to-end-paso-a-paso)
+4. [Paso 3: Prueba del Flujo End-to-End (Notas y Alertas)](#3-prueba-del-flujo-end-to-end-notas-y-alertas)
    - [3.1 Acceso al Frontend SPA (`CrearNota.tsx`)](#31-acceso-a-la-interfaz-del-frontend)
    - [3.2 Escenario A: Nota Aprobatoria (Calificación ≥ 4.0)](#32-escenario-a-nota-aprobatoria--40)
    - [3.3 Escenario B: Nota Deficiente con Alerta en Tiempo Real (Calificación < 4.0)](#33-escenario-b-nota-deficiente--40---alerta-en-tiempo-real)
@@ -26,6 +26,20 @@
    - [4.3 Verificación de la Base de Datos RDS MySQL](#43-verificación-directa-en-aws-rds-mysql)
    - [4.4 Inspección de Kafka mediante CLI en Contenedor](#44-inspección-de-tópicos-mediante-kafka-cli)
    - [4.5 Matriz de Solución de Problemas (Troubleshooting)](#45-matriz-de-solución-de-problemas-troubleshooting)
+6. [Paso 5: Tuning de Alto Rendimiento y Pruebas de Carga](#5-tuning-de-alto-rendimiento-y-pruebas-de-carga)
+   - [5.1 Parámetros de Tuning Implementados](#51-parámetros-de-tuning-implementados)
+   - [5.2 Ejecución de la Prueba de Carga Masiva](#52-ejecución-de-la-prueba-de-carga-masiva)
+   - [5.3 Verificación y Visualización de Consumer Lag en Kafka UI](#53-verificación-y-visualización-de-consumer-lag-en-kafka-ui)
+   - [5.4 Compatibilidad con el Pipeline Académico Existente](#54-compatibilidad-con-el-pipeline-académico-existente)
+7. [Paso 6: Integración del Tópico de Comentarios](#6-integración-del-tópico-de-comentarios)
+   - [6.1 Modelos JSON Estandarizados](#61-modelos-json-estandarizados)
+   - [6.2 Prueba End-to-End del Tópico 2: Creación de Comentario](#62-prueba-end-to-end-del-tópico-2-creación-de-comentario)
+8. [Paso 7: Mensajería Asíncrona con RabbitMQ](#7-mensajería-asíncrona-con-rabbitmq)
+   - [7.1 Acceso a la Consola de Administración de RabbitMQ](#71-acceso-a-la-consola-de-administración-de-rabbitmq)
+   - [7.2 Verificación del Clúster y Recursos](#72-verificación-del-clúster-y-recursos)
+   - [7.3 Prueba de Envío de Órdenes y Dead Letter Queue](#73-prueba-de-envío-de-órdenes-y-dead-letter-queue)
+9. [Paso 8: Script de Despliegue Robusto para EC2](#8-script-de-despliegue-robusto-para-ec2)
+10. [Conclusión y Criterios de Aceptación Cumplidos](#-conclusión-y-criterios-de-aceptación-cumplidos)
 
 ---
 
@@ -74,7 +88,7 @@ flowchart TD
 
 ---
 
-## 1. Pasos de Despliegue en AWS (Terraform + Docker)
+## 1. Despliegue de Infraestructura en AWS (Terraform + Docker)
 
 ### 1.1 Requisitos Previos
 
@@ -104,7 +118,7 @@ Antes de ejecutar el despliegue, asegúrate de contar con:
    - 1 Base de Datos **AWS RDS MySQL** (`encargo-bitacora-db`).
    - 2 Instancias **AWS EC2** (Ubuntu 22.04 LTS: Backend `t2.medium` y Frontend `t2.micro`).
    - 2 **Elastic IPs (EIP)** estáticas públicas asociadas a cada EC2.
-   - Grupos de Seguridad (**Security Groups**) con reglas de entrada para puertos `22`, `80`, `443`, `8080` (Kafka UI), `8095` (Gateway) y `8761` (Eureka).
+   - Grupos de Seguridad (**Security Groups**) con reglas de entrada para puertos `22`, `80`, `443`, `8080` (Kafka UI), `8095` (Gateway), `8761` (Eureka) y `15672` (RabbitMQ Management).
    - Generación automática de par de llaves SSH RSA de 4096 bits.
 
 4. Aplica los cambios para aprovisionar toda la infraestructura en la nube:
@@ -194,7 +208,7 @@ sudo docker compose -f docker-compose.prod.yml ps
 
 ---
 
-## 2. Verificación de Servicios en Nube
+## 2. Verificación de Servicios en la Nube
 
 ### 2.1 Verificación en el Servidor Eureka (:8761)
 
@@ -239,8 +253,8 @@ Kafka UI (provectuslabs) ofrece una consola visual para monitorear el cluster de
 ```text
 Kafka UI Dashboard
 └── Topics
-    ├── academic-grades-input   (Replication: 1, Partitions: 1)
-    └── academic-alerts-output  (Replication: 1, Partitions: 1)
+    ├── academic-grades-input   (Replication: 1, Partitions: 3)
+    └── academic-alerts-output  (Replication: 1, Partitions: 3)
 ```
 
 5. Haz clic en la sección **Consumers** para verificar que la aplicación de Kafka Streams esté suscrita:
@@ -262,7 +276,7 @@ Con el comando anterior activo en tu terminal, podrás ingresar directamente a t
 
 ---
 
-## 3. Prueba del Flujo End-to-End (Paso a Paso)
+## 3. Prueba del Flujo End-to-End (Notas y Alertas)
 
 A continuación, ejecutaremos dos escenarios para validar de forma integral el pipeline reactivo de eventos.
 
@@ -586,67 +600,7 @@ sudo docker exec -it kafka kafka-topics.sh \
 
 ---
 
-## 🎯 Conclusión y Criterios de Aceptación Cumplidos
-
-El presente manual y las pruebas detalladas garantizan la validación de:
-1. **Infraestructura como Código (IaC):** Despliegue reproducible con Terraform de redes, seguridad, almacenamiento relacional (RDS) y cómputo (EC2).
-2. **Aprovisionamiento automatizado:** Configuración sin intervención humana a través de `user_data` y Docker Compose.
-3. **Persistencia Políglota y Desacoplamiento:** Almacenamiento transaccional en MySQL junto a distribución asíncrona mediante Apache Kafka.
-4. **Procesamiento de Eventos en Tiempo Real:** Filtrado y emisión reactiva de alertas académicas tempranas con Kafka Streams.
-5. **Observabilidad Integral:** Monitoreo visual de la topología con Eureka Dashboard, Kafka UI y bitácoras centralizadas de contenedores.
-
-
-
-
-
-
-
-
-6. **Crear Jars:**
-Esto se hace dentro de la maquina ec2 del backend
-cd /home/ubuntu/app
-source .env
-
-# Asegurar permisos de usuario ubuntu sobre target/ y código fuente
-sudo chown -R ubuntu:ubuntu /home/ubuntu/app
-
-# Lista de todos los microservicios
-SERVICIOS=(
-  "eureka-server"
-  "gateway"
-  "notas_service"
-  "asignaturas_service"
-  "profesores_service"
-  "grupos_service"
-  "integrantes_service"
-  "roles_service"
-  "secciones_service"
-  "trabajos_service"
-  "entregas_service"
-  "comentarios_service"
-  "rabbitmq_service"
-  "kafka_service"
-)
-
-# Compilar JAR y construir imagen Docker para cada uno
-for svc in "${SERVICIOS[@]}"; do
-  svc_dash="${svc//_/-}"
-  echo "=================================================="
-  echo "🔨 Compilando JAR y creando imagen para: $svc_dash"
-  echo "=================================================="
-  (cd "Backend/$svc" && mvn clean package -DskipTests)
-  sudo docker build -t "${ECR_REGISTRY}/cloudnative-encargo-${svc_dash}:latest" "Backend/$svc"
-done
-
-echo "=================================================="
-echo "🚀 Levantando todos los contenedores..."
-echo "=================================================="
-sudo docker compose -f docker-compose.prod.yml up -d
-
-
----
-
-## ⚡ Paso 5: Guía de Tuning de Alto Rendimiento y Pruebas de Carga (Load Testing)
+## 5. Tuning de Alto Rendimiento y Pruebas de Carga
 
 Esta sección describe cómo ejecutar y verificar el **Tuning de Infraestructura y Microservicios** junto con la prueba de **Carga Masiva y Consumer Lag**.
 
@@ -739,10 +693,9 @@ Todos los componentes de tuning y pruebas de carga conviven de forma aislada y n
 - El tópico **`sensor-topic`** maneja la carga masiva y métricas de throughput.
 - El bean `KafkaTemplate<String, String>` tuned optimiza también el rendimiento de publicación de calificaciones en `/api/v1/kafka/publicar-nota`.
 
-
 ---
 
-## 📬 Paso 6: Integración del Tópico 2 (`comentarios-academicos-topic`) y Modelos JSON
+## 6. Integración del Tópico de Comentarios
 
 Se implementó el segundo caso de uso de eventos en el microservicio `comentarios_service` siguiendo la arquitectura EDA del proyecto.
 
@@ -758,20 +711,35 @@ Se implementó el segundo caso de uso de eventos en el microservicio `comentario
 
 ### 6.2 Prueba End-to-End del Tópico 2: Creación de Comentario
 
-1. **Enviar petición POST al endpoint de comentarios**:
-```bash
-curl -X POST "http://localhost:8092/api/v1/comentarios" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "idEntrega": 5,
-    "idProfesor": 3,
-    "contenido": "Excelente implementación del pipeline de Kafka Streams",
-    "fechaComentario": "2026-11-03T16:00:00",
-    "tipoComentario": "FELICITACION"
-  }'
-```
+1. **Enviar petición POST al endpoint de comentarios:**
 
-2. **Verificar logs del contenedor `comentarios-service`**:
+   **Opción A — Directamente al microservicio `comentarios-service` (Puerto 8092):**
+   ```bash
+   curl -X POST "http://localhost:8092/api/v1/comentarios" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "idEntrega": 5,
+       "idProfesor": 3,
+       "contenido": "Excelente implementación del pipeline de Kafka Streams",
+       "fechaComentario": "2026-11-03T16:00:00",
+       "tipoComentario": "FELICITACION"
+     }'
+   ```
+
+   **Opción B — A través del API Gateway (Puerto 8095), recomendado en AWS:**
+   ```bash
+   curl -X POST "http://<BACKEND_IP>:8095/api/v1/comentarios" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "idEntrega": 5,
+       "idProfesor": 3,
+       "contenido": "Excelente implementación del pipeline de Kafka Streams",
+       "fechaComentario": "2026-11-03T16:00:00",
+       "tipoComentario": "FELICITACION"
+     }'
+   ```
+
+2. **Verificar logs del contenedor `comentarios-service`:**
 ```bash
 sudo docker compose -f docker-compose.prod.yml logs comentarios-service
 ```
@@ -781,8 +749,196 @@ Salida esperada:
 [KAFKA PRODUCER] Comentario publicado en tópico 'comentarios-academicos-topic' con Key (idEntrega): 5
 ```
 
-3. **Verificar en Kafka UI (`http://localhost:8080`)**:
-- Ir a **Topics** -> **`comentarios-academicos-topic`** -> pestaña **Messages**.
-- Podrás observar el mensaje publicado con:
-  - **Key**: `5` (identificador de la entrega).
-  - **Payload**: JSON con el `id`, `entregaId`, `usuarioId`, `textoComentario`, `fechaCreacion` y `tipoComentario`.
+3. **Verificar en Kafka UI (`http://<BACKEND_IP>:8080`):**
+   - Ir a **Topics** -> **`comentarios-academicos-topic`** -> pestaña **Messages**.
+   - Podrás observar el mensaje publicado con:
+     - **Key**: `5` (identificador de la entrega).
+     - **Payload**: JSON con el `id`, `entregaId`, `usuarioId`, `textoComentario`, `fechaCreacion` y `tipoComentario`.
+
+---
+
+## 7. Mensajería Asíncrona con RabbitMQ
+
+Además de Apache Kafka, el sistema implementa **RabbitMQ** como broker de mensajería asíncrona para la gestión de órdenes con soporte de **Dead Letter Queues (DLQ)**, **Direct Exchange** y procesamiento resiliente. A continuación se describen las pruebas básicas para verificar el correcto funcionamiento de RabbitMQ en el entorno desplegado. Para la documentación completa de la arquitectura RabbitMQ (exchanges, colas, routing keys, endpoints REST y dashboard del Frontend), consulta la sección **🐰 RabbitMQ y Mensajería** del [README.md](README.md) del proyecto.
+
+### 7.1 Acceso a la Consola de Administración de RabbitMQ
+
+1. Abre tu navegador e ingresa a la interfaz de administración de RabbitMQ:
+   ```text
+   http://<BACKEND_IP>:15672
+   ```
+2. Inicia sesión con las credenciales configuradas en `docker-compose.yml`:
+   - **Usuario:** `admin`
+   - **Contraseña:** `admin123`
+3. Aparecerá el panel **RabbitMQ Management** con el resumen del nodo, conexiones activas, canales y colas.
+
+> 💡 Si el puerto `15672` no está accesible externamente, puedes usar un túnel SSH:
+> ```bash
+> ssh -i deploy_key.pem -L 15672:localhost:15672 ubuntu@<BACKEND_IP>
+> ```
+> Luego accede a `http://localhost:15672`.
+
+---
+
+### 7.2 Verificación del Clúster y Recursos
+
+Desde la consola de administración de RabbitMQ, verifica que existan los siguientes recursos:
+
+| Recurso | Nombre | Tipo | Descripción |
+| :--- | :--- | :--- | :--- |
+| Exchange | `orders.exchange` | Direct | Exchange principal de órdenes |
+| Cola | `orders.queue` | Queue (durable) | Cola de procesamiento con TTL de 30s |
+| Exchange | `orders.dlx` | Fanout | Dead Letter Exchange |
+| Cola | `orders.dlq` | Queue (durable) | Dead Letter Queue con TTL de 24h |
+
+En la pestaña **Queues**, confirma que `orders.queue` y `orders.dlq` aparezcan listadas y en estado **running**.
+
+---
+
+### 7.3 Prueba de Envío de Órdenes y Dead Letter Queue
+
+1. **Enviar una orden de prueba a través del API Gateway:**
+   ```bash
+   curl -X POST "http://<BACKEND_IP>:8095/api/v1/rabbitmq/orders/send" \
+     -H "Content-Type: application/json" \
+     -d '{"orderId":"ORD-001","customerName":"Estudiante Duoc"}'
+   ```
+
+2. **Consultar el estado del servicio y las colas:**
+   ```bash
+   curl -s "http://<BACKEND_IP>:8095/api/v1/rabbitmq/orders/status" | jq .
+   ```
+
+3. **Verificar el comportamiento en RabbitMQ Management UI:**
+   - En la pestaña **Queues**, observa los contadores de `orders.queue` y `orders.dlq`.
+   - El `OrderConsumer` simula un fallo aleatorio del 50%, por lo que es normal ver mensajes moviéndose de `orders.queue` a `orders.dlq`.
+
+4. **Revisar los logs del microservicio RabbitMQ:**
+   ```bash
+   sudo docker compose -f docker-compose.prod.yml logs rabbitmq-service
+   ```
+
+> 📌 Para más detalles sobre la configuración de listeners, concurrencia de consumidores, pausado/reanudación de listeners y el dashboard de RabbitMQ en el Frontend, consulta la sección completa en el [README.md](README.md).
+
+---
+
+## 8. Script de Despliegue Robusto para EC2
+
+El siguiente script Bash automatiza el proceso de redespliegue de los microservicios en la instancia EC2 de Backend. Es útil cuando se necesitan aplicar cambios de código, recompilar servicios y reiniciar los contenedores sin depender del proceso completo de `cloud-init`. El script incluye validaciones de estado, reintentos y limpieza de recursos Docker para garantizar un despliegue confiable.
+
+```bash
+#!/bin/bash
+# =============================================================================
+# deploy_backend.sh — Script de Despliegue Robusto para EC2 Backend
+# Uso: sudo bash deploy_backend.sh
+# =============================================================================
+set -euo pipefail
+
+APP_DIR="/home/ubuntu/app"
+COMPOSE_FILE="docker-compose.prod.yml"
+BRANCH="Develop"
+MAX_RETRIES=3
+
+echo "=========================================="
+echo "  Despliegue Robusto — EC2 Backend"
+echo "  $(date '+%Y-%m-%d %H:%M:%S')"
+echo "=========================================="
+
+# 1. Validar que se ejecuta como root
+if [[ $EUID -ne 0 ]]; then
+  echo "❌ Este script debe ejecutarse con sudo."
+  exit 1
+fi
+
+# 2. Navegar al directorio de la aplicación
+cd "$APP_DIR" || { echo "❌ No se encontró $APP_DIR"; exit 1; }
+
+# 3. Cargar variables de entorno
+if [[ -f .env ]]; then
+  export $(grep -v '^#' .env | xargs)
+  echo "✅ Variables de entorno cargadas desde .env"
+else
+  echo "⚠️  Archivo .env no encontrado. Usando variables del sistema."
+fi
+
+# 4. Detener contenedores existentes
+echo "🔄 Deteniendo contenedores actuales..."
+docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
+
+# 5. Actualizar código fuente
+echo "🔄 Actualizando repositorio (rama: $BRANCH)..."
+git fetch origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
+echo "✅ Código actualizado al último commit de $BRANCH."
+
+# 6. Compilar microservicios Java con reintentos
+compile_service() {
+  local service_dir=$1
+  local attempt=1
+  echo "🔨 Compilando $service_dir..."
+  while [[ $attempt -le $MAX_RETRIES ]]; do
+    if mvn -f "$service_dir/pom.xml" clean package -DskipTests -q; then
+      echo "✅ $service_dir compilado exitosamente."
+      return 0
+    fi
+    echo "⚠️  Intento $attempt/$MAX_RETRIES fallido para $service_dir. Reintentando..."
+    ((attempt++))
+    sleep 5
+  done
+  echo "❌ Error: No se pudo compilar $service_dir después de $MAX_RETRIES intentos."
+  return 1
+}
+
+for svc in eureka_server gateway notas_service kafka_service comentarios_service rabbitmq_service asignaturas_service grupos_service; do
+  if [[ -d "$svc" ]]; then
+    compile_service "$svc"
+  fi
+done
+
+# 7. Limpiar recursos Docker obsoletos
+echo "🧹 Limpiando imágenes y volúmenes huérfanos..."
+docker system prune -f --volumes || true
+
+# 8. Construir imágenes Docker y levantar contenedores
+echo "🚀 Construyendo imágenes y levantando servicios..."
+docker compose -f "$COMPOSE_FILE" build --no-cache
+docker compose -f "$COMPOSE_FILE" up -d
+
+# 9. Esperar y verificar estado de los contenedores
+echo "⏳ Esperando 30 segundos para estabilización..."
+sleep 30
+
+echo ""
+echo "📋 Estado final de los contenedores:"
+docker compose -f "$COMPOSE_FILE" ps
+
+RUNNING=$(docker compose -f "$COMPOSE_FILE" ps --status running -q | wc -l)
+TOTAL=$(docker compose -f "$COMPOSE_FILE" ps -q | wc -l)
+
+echo ""
+if [[ "$RUNNING" -eq "$TOTAL" && "$TOTAL" -gt 0 ]]; then
+  echo "✅ Despliegue completado: $RUNNING/$TOTAL contenedores en ejecución."
+else
+  echo "⚠️  Atención: Solo $RUNNING de $TOTAL contenedores están activos."
+  echo "   Revisa los logs con: docker compose -f $COMPOSE_FILE logs"
+fi
+
+echo "=========================================="
+echo "  Despliegue finalizado: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "=========================================="
+```
+
+> 📌 **Uso:** Copia este script a la EC2 de Backend (por ejemplo en `/home/ubuntu/deploy_backend.sh`) y ejecútalo con `sudo bash deploy_backend.sh` cada vez que necesites redesplegar los servicios tras un cambio en el código fuente.
+
+---
+
+## 🎯 Conclusión y Criterios de Aceptación Cumplidos
+
+El presente manual y las pruebas detalladas garantizan la validación de:
+1. **Infraestructura como Código (IaC):** Despliegue reproducible con Terraform de redes, seguridad, almacenamiento relacional (RDS) y cómputo (EC2).
+2. **Aprovisionamiento automatizado:** Configuración sin intervención humana a través de `user_data` y Docker Compose.
+3. **Persistencia Políglota y Desacoplamiento:** Almacenamiento transaccional en MySQL junto a distribución asíncrona mediante Apache Kafka.
+4. **Procesamiento de Eventos en Tiempo Real:** Filtrado y emisión reactiva de alertas académicas tempranas con Kafka Streams.
+5. **Observabilidad Integral:** Monitoreo visual de la topología con Eureka Dashboard, Kafka UI y bitácoras centralizadas de contenedores.
+6. **Mensajería Asíncrona con RabbitMQ:** Sistema resiliente de órdenes con Dead Letter Queues, procesamiento concurrente y panel de administración.
+7. **Tuning y Pruebas de Rendimiento:** Optimización del productor Kafka (batching, compresión snappy) y validación de throughput con pruebas de carga masiva.
