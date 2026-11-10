@@ -187,6 +187,9 @@ resource "aws_instance" "backend" {
               cd /home/ubuntu/app
               REGISTRY=$(grep ECR_REGISTRY .env | cut -d '=' -f2)
 
+              # Corregir saltos de linea Windows en rabbitmq.conf
+              sed -i 's/\r$//' rabbitmq.conf 2>/dev/null || true
+
               # Compilar microservicios si no existen los artefactos JAR
               if [ ! -f "Backend/gateway/target/gateway-0.0.1-SNAPSHOT.jar" ]; then
                 for dir in Backend/*/; do
@@ -200,6 +203,10 @@ resource "aws_instance" "backend" {
               fi
 
               sudo docker pull rabbitmq:4.2-management || true
+
+              # Arranque escalonado para evitar saturacion de CPU en el primer boot
+              sudo docker compose -f docker-compose.prod.yml up -d eureka-server zookeeper kafka rabbitmq-1 rabbitmq-2
+              sleep 15
               sudo docker compose -f docker-compose.prod.yml up -d
               EOT
               chmod +x /home/ubuntu/app/start.sh
