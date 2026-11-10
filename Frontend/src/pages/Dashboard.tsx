@@ -19,6 +19,7 @@ import {
   Layers,
   Award,
   RefreshCw,
+  MessageSquare,
 } from 'lucide-react';
 
 interface SummaryData {

@@ -45,6 +45,8 @@ export interface Trabajo {
   tipoTrabajo: TipoTrabajo;
   semestre: number;
   estado: EstadoTrabajo;
+  descripcion?: string;
+  fechaEntrega?: string;
 }
 
 export interface Entrega {
@@ -64,6 +66,7 @@ export interface Comentario {
   idProfesor: number;
   usuarioId?: number;
   contenido: string;
+  texto?: string;
   textoComentario?: string;
   fechaComentario: string;
   fechaCreacion?: string;
