@@ -1,9 +1,9 @@
 package cl.duoc.rabbitmq.controller;
 
-import cl.duoc.rabbitmq.config.RabbitMQConfig;
 import cl.duoc.rabbitmq.service.RabbitResourceManager;
 import org.springframework.amqp.core.QueueInformation;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -17,6 +17,18 @@ public class OrderController {
 
     private final RabbitTemplate rabbitTemplate;
     private final RabbitResourceManager resourceManager;
+
+    @Value("${rabbitmq.exchanges.orders:orders.exchange}")
+    private String ordersExchange;
+
+    @Value("${rabbitmq.routing-keys.order-created:order.created}")
+    private String ordersRoutingKey;
+
+    @Value("${rabbitmq.queues.orders:orders.queue}")
+    private String ordersQueue;
+
+    @Value("${rabbitmq.queues.orders-dlq:orders.dlq}")
+    private String dlqQueue;
 
     public OrderController(RabbitTemplate rabbitTemplate, RabbitResourceManager resourceManager) {
         this.rabbitTemplate = rabbitTemplate;
@@ -34,8 +46,8 @@ public class OrderController {
         );
 
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.ORDERS_EXCHANGE,
-                RabbitMQConfig.ORDERS_ROUTING_KEY,
+                ordersExchange,
+                ordersRoutingKey,
                 message
         );
 
@@ -53,16 +65,32 @@ public class OrderController {
         status.put("rabbitmq", "Conectado");
         status.put("timestamp", LocalDateTime.now().toString());
 
-        QueueInformation mainQueue = resourceManager.getQueueInfo(RabbitMQConfig.ORDERS_QUEUE);
-        QueueInformation dlqQueue = resourceManager.getQueueInfo(RabbitMQConfig.DLQ_QUEUE);
+        QueueInformation mainQueue = resourceManager.getQueueInfo(ordersQueue);
+        QueueInformation dlq = resourceManager.getQueueInfo(dlqQueue);
 
         if (mainQueue != null) {
             status.put("ordersQueueMessages", mainQueue.getMessageCount());
         }
-        if (dlqQueue != null) {
-            status.put("dlqMessages", dlqQueue.getMessageCount());
+        if (dlq != null) {
+            status.put("dlqMessages", dlq.getMessageCount());
         }
 
         return status;
+    }
+
+    public String getOrdersExchange() {
+        return ordersExchange;
+    }
+
+    public String getOrdersRoutingKey() {
+        return ordersRoutingKey;
+    }
+
+    public String getOrdersQueue() {
+        return ordersQueue;
+    }
+
+    public String getDlqQueue() {
+        return dlqQueue;
     }
 }

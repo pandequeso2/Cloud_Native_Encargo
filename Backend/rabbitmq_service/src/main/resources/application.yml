@@ -1,0 +1,53 @@
+server:
+  port: 8093
+
+spring:
+  application:
+    name: rabbitmq-service
+  rabbitmq:
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672,localhost:5673}
+    username: ${RABBITMQ_USER:admin}
+    password: ${RABBITMQ_PASSWORD:admin123}
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-interval: 10000
+          multiplier: 2.0
+          max-attempts: 3
+
+# Externalización de recursos de RabbitMQ (Exchanges, Queues, Routing Keys)
+rabbitmq:
+  exchanges:
+    logs: ${RABBITMQ_EXCHANGE_LOGS:logs_direct_exchange}
+    orders: ${RABBITMQ_EXCHANGE_ORDERS:orders.exchange}
+    orders-dlx: ${RABBITMQ_EXCHANGE_ORDERS_DLX:orders.dlx}
+  queues:
+    all-logs: ${RABBITMQ_QUEUE_ALL_LOGS:all_logs_queue}
+    errors-only: ${RABBITMQ_QUEUE_ERRORS_ONLY:errors_only_queue}
+    orders: ${RABBITMQ_QUEUE_ORDERS:orders.queue}
+    orders-dlq: ${RABBITMQ_QUEUE_ORDERS_DLQ:orders.dlq}
+  routing-keys:
+    info: ${RABBITMQ_ROUTING_KEY_INFO:INFO}
+    warning: ${RABBITMQ_ROUTING_KEY_WARNING:WARNING}
+    error: ${RABBITMQ_ROUTING_KEY_ERROR:ERROR}
+    order-created: ${RABBITMQ_ROUTING_KEY_ORDER_CREATED:order.created}
+    order-dead: ${RABBITMQ_ROUTING_KEY_ORDER_DEAD:order.dead}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    root: INFO
+    cl.duoc.rabbitmq: DEBUG
+    org.springframework.amqp: DEBUG
+

@@ -1,7 +1,7 @@
 package cl.duoc.rabbitmq.controller;
 
-import cl.duoc.rabbitmq.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -12,6 +12,9 @@ import java.time.format.DateTimeFormatter;
 public class LogProducerController {
 
     private final RabbitTemplate rabbitTemplate;
+
+    @Value("${rabbitmq.exchanges.logs:logs_direct_exchange}")
+    private String logsExchange;
 
     public LogProducerController(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
@@ -24,7 +27,7 @@ public class LogProducerController {
         String formattedMessage = String.format("[%s] [%s] %s", timestamp, level, request.getMessage());
 
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.EXCHANGE_NAME,
+                logsExchange,
                 level,
                 formattedMessage
         );
@@ -58,5 +61,9 @@ public class LogProducerController {
         public void setMessage(String message) {
             this.message = message;
         }
+    }
+
+    public String getLogsExchange() {
+        return logsExchange;
     }
 }

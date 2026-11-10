@@ -1,8 +1,13 @@
 package cl.duoc.rabbitmq.controller;
 
+import cl.duoc.rabbitmq.dto.BindingRequestDto;
+import cl.duoc.rabbitmq.dto.ExchangeRequestDto;
+import cl.duoc.rabbitmq.dto.QueueRequestDto;
 import cl.duoc.rabbitmq.service.RabbitResourceManager;
+import jakarta.validation.Valid;
 import org.springframework.amqp.core.QueueInformation;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,27 +22,39 @@ public class RabbitAdminController {
     }
 
     @PostMapping("/queues")
-    public ResponseEntity<String> createQueue(@RequestParam String queueName) {
-        resourceManager.createQueue(queueName);
+    public ResponseEntity<String> createQueue(@Valid @ModelAttribute QueueRequestDto dto) {
+        resourceManager.createQueue(dto.getQueueName());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Cola '" + queueName + "' creada exitosamente");
+                .body("Cola '" + dto.getQueueName() + "' creada exitosamente");
+    }
+
+    @PostMapping(value = "/queues", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> createQueueJson(@Valid @RequestBody QueueRequestDto dto) {
+        return createQueue(dto);
     }
 
     @PostMapping("/exchanges")
-    public ResponseEntity<String> createExchange(@RequestParam String exchangeName) {
-        resourceManager.createExchange(exchangeName);
+    public ResponseEntity<String> createExchange(@Valid @ModelAttribute ExchangeRequestDto dto) {
+        resourceManager.createExchange(dto.getExchangeName());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Exchange '" + exchangeName + "' creado exitosamente");
+                .body("Exchange '" + dto.getExchangeName() + "' creado exitosamente");
+    }
+
+    @PostMapping(value = "/exchanges", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> createExchangeJson(@Valid @RequestBody ExchangeRequestDto dto) {
+        return createExchange(dto);
     }
 
     @PostMapping("/bindings")
-    public ResponseEntity<String> createBinding(
-            @RequestParam String queueName,
-            @RequestParam String exchangeName,
-            @RequestParam String routingKey) {
-        resourceManager.createBinding(queueName, exchangeName, routingKey);
+    public ResponseEntity<String> createBinding(@Valid @ModelAttribute BindingRequestDto dto) {
+        resourceManager.createBinding(dto.getQueueName(), dto.getExchangeName(), dto.getRoutingKey());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Binding creado: " + queueName + " <-> " + exchangeName + " (RoutingKey: " + routingKey + ")");
+                .body("Binding creado: " + dto.getQueueName() + " <-> " + dto.getExchangeName() + " (RoutingKey: " + dto.getRoutingKey() + ")");
+    }
+
+    @PostMapping(value = "/bindings", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> createBindingJson(@Valid @RequestBody BindingRequestDto dto) {
+        return createBinding(dto);
     }
 
     @GetMapping("/queues/{queueName}")

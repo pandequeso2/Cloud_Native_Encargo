@@ -1,6 +1,7 @@
 package cl.duoc.rabbitmq.config;
 
 import org.springframework.amqp.core.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,67 +11,95 @@ public class RabbitMQConfig {
     // =========================================================================
     // 1. SISTEMA DE LOGS (Direct Exchange, Bindings, Routing Keys)
     // =========================================================================
-    public static final String EXCHANGE_NAME = "logs_direct_exchange";
-    public static final String ALL_LOGS_QUEUE = "all_logs_queue";
-    public static final String ERRORS_ONLY_QUEUE = "errors_only_queue";
+    @Value("${rabbitmq.exchanges.logs:logs_direct_exchange}")
+    private String logsExchange;
 
-    @Bean
-    public DirectExchange directExchange() {
-        return new DirectExchange(EXCHANGE_NAME, true, false);
-    }
+    @Value("${rabbitmq.queues.all-logs:all_logs_queue}")
+    private String allLogsQueue;
 
-    @Bean
-    public Queue allLogsQueue() {
-        return new Queue(ALL_LOGS_QUEUE, true);
-    }
+    @Value("${rabbitmq.queues.errors-only:errors_only_queue}")
+    private String errorsOnlyQueue;
 
-    @Bean
-    public Queue errorsOnlyQueue() {
-        return new Queue(ERRORS_ONLY_QUEUE, true);
-    }
+    @Value("${rabbitmq.routing-keys.info:INFO}")
+    private String routingKeyInfo;
 
-    @Bean
-    public Binding bindAllLogsForInfo(DirectExchange directExchange, Queue allLogsQueue) {
-        return BindingBuilder.bind(allLogsQueue).to(directExchange).with("INFO");
-    }
+    @Value("${rabbitmq.routing-keys.warning:WARNING}")
+    private String routingKeyWarning;
 
-    @Bean
-    public Binding bindAllLogsForWarning(DirectExchange directExchange, Queue allLogsQueue) {
-        return BindingBuilder.bind(allLogsQueue).to(directExchange).with("WARNING");
-    }
-
-    @Bean
-    public Binding bindAllLogsForError(DirectExchange directExchange, Queue allLogsQueue) {
-        return BindingBuilder.bind(allLogsQueue).to(directExchange).with("ERROR");
-    }
-
-    @Bean
-    public Binding bindErrorsOnly(DirectExchange directExchange, Queue errorsOnlyQueue) {
-        return BindingBuilder.bind(errorsOnlyQueue).to(directExchange).with("ERROR");
-    }
+    @Value("${rabbitmq.routing-keys.error:ERROR}")
+    private String routingKeyError;
 
     // =========================================================================
     // 2. SISTEMA RESILIENTE CON DLX / DLQ Y TTL (Dead Letter Queue & Retries)
     // =========================================================================
-    public static final String ORDERS_EXCHANGE = "orders.exchange";
-    public static final String ORDERS_QUEUE = "orders.queue";
-    public static final String ORDERS_ROUTING_KEY = "order.created";
+    @Value("${rabbitmq.exchanges.orders:orders.exchange}")
+    private String ordersExchange;
 
-    public static final String DLX_EXCHANGE = "orders.dlx";
-    public static final String DLQ_QUEUE = "orders.dlq";
-    public static final String DLX_ROUTING_KEY = "order.dead";
+    @Value("${rabbitmq.queues.orders:orders.queue}")
+    private String ordersQueue;
+
+    @Value("${rabbitmq.routing-keys.order-created:order.created}")
+    private String ordersRoutingKey;
+
+    @Value("${rabbitmq.exchanges.orders-dlx:orders.dlx}")
+    private String dlxExchange;
+
+    @Value("${rabbitmq.queues.orders-dlq:orders.dlq}")
+    private String dlqQueue;
+
+    @Value("${rabbitmq.routing-keys.order-dead:order.dead}")
+    private String dlxRoutingKey;
+
+    // --- Beans: Sistema de Logs ---
+
+    @Bean
+    public DirectExchange directExchange() {
+        return new DirectExchange(logsExchange, true, false);
+    }
+
+    @Bean
+    public Queue allLogsQueue() {
+        return new Queue(allLogsQueue, true);
+    }
+
+    @Bean
+    public Queue errorsOnlyQueue() {
+        return new Queue(errorsOnlyQueue, true);
+    }
+
+    @Bean
+    public Binding bindAllLogsForInfo(DirectExchange directExchange, Queue allLogsQueue) {
+        return BindingBuilder.bind(allLogsQueue).to(directExchange).with(routingKeyInfo);
+    }
+
+    @Bean
+    public Binding bindAllLogsForWarning(DirectExchange directExchange, Queue allLogsQueue) {
+        return BindingBuilder.bind(allLogsQueue).to(directExchange).with(routingKeyWarning);
+    }
+
+    @Bean
+    public Binding bindAllLogsForError(DirectExchange directExchange, Queue allLogsQueue) {
+        return BindingBuilder.bind(allLogsQueue).to(directExchange).with(routingKeyError);
+    }
+
+    @Bean
+    public Binding bindErrorsOnly(DirectExchange directExchange, Queue errorsOnlyQueue) {
+        return BindingBuilder.bind(errorsOnlyQueue).to(directExchange).with(routingKeyError);
+    }
+
+    // --- Beans: Sistema Resiliente de Órdenes y DLX / DLQ ---
 
     @Bean
     public DirectExchange ordersExchange() {
-        return new DirectExchange(ORDERS_EXCHANGE, true, false);
+        return new DirectExchange(ordersExchange, true, false);
     }
 
     @Bean
     public Queue ordersQueue() {
-        return QueueBuilder.durable(ORDERS_QUEUE)
+        return QueueBuilder.durable(ordersQueue)
                 .withArgument("x-message-ttl", 30000) // TTL de 30 segundos
-                .withArgument("x-dead-letter-exchange", DLX_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", DLX_ROUTING_KEY)
+                .withArgument("x-dead-letter-exchange", dlxExchange)
+                .withArgument("x-dead-letter-routing-key", dlxRoutingKey)
                 .withArgument("x-max-length", 1000)
                 .build();
     }
@@ -79,17 +108,17 @@ public class RabbitMQConfig {
     public Binding ordersBinding(Queue ordersQueue, DirectExchange ordersExchange) {
         return BindingBuilder.bind(ordersQueue)
                 .to(ordersExchange)
-                .with(ORDERS_ROUTING_KEY);
+                .with(ordersRoutingKey);
     }
 
     @Bean
     public FanoutExchange deadLetterExchange() {
-        return new FanoutExchange(DLX_EXCHANGE, true, false);
+        return new FanoutExchange(dlxExchange, true, false);
     }
 
     @Bean
     public Queue deadLetterQueue() {
-        return QueueBuilder.durable(DLQ_QUEUE)
+        return QueueBuilder.durable(dlqQueue)
                 .withArgument("x-message-ttl", 86400000) // TTL de 24 horas en DLQ
                 .build();
     }
@@ -98,5 +127,55 @@ public class RabbitMQConfig {
     public Binding deadLetterBinding(Queue deadLetterQueue, FanoutExchange deadLetterExchange) {
         return BindingBuilder.bind(deadLetterQueue)
                 .to(deadLetterExchange);
+    }
+
+    // --- Getters ---
+
+    public String getLogsExchange() {
+        return logsExchange;
+    }
+
+    public String getAllLogsQueue() {
+        return allLogsQueue;
+    }
+
+    public String getErrorsOnlyQueue() {
+        return errorsOnlyQueue;
+    }
+
+    public String getRoutingKeyInfo() {
+        return routingKeyInfo;
+    }
+
+    public String getRoutingKeyWarning() {
+        return routingKeyWarning;
+    }
+
+    public String getRoutingKeyError() {
+        return routingKeyError;
+    }
+
+    public String getOrdersExchange() {
+        return ordersExchange;
+    }
+
+    public String getOrdersQueue() {
+        return ordersQueue;
+    }
+
+    public String getOrdersRoutingKey() {
+        return ordersRoutingKey;
+    }
+
+    public String getDlxExchange() {
+        return dlxExchange;
+    }
+
+    public String getDlqQueue() {
+        return dlqQueue;
+    }
+
+    public String getDlxRoutingKey() {
+        return dlxRoutingKey;
     }
 }

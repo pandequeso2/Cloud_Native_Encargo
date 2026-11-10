@@ -1,11 +1,11 @@
 package cl.duoc.rabbitmq.consumer;
 
-import cl.duoc.rabbitmq.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
@@ -14,13 +14,19 @@ public class OrderConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(OrderConsumer.class);
 
+    @Value("${rabbitmq.queues.orders:orders.queue}")
+    private String ordersQueue;
+
+    @Value("${rabbitmq.queues.orders-dlq:orders.dlq}")
+    private String dlqQueue;
+
     /**
      * Consumidor principal: Recibe órdenes de la cola principal.
      * Simula fallos aleatorios para demostrar el envío a Dead Letter Exchange (DLX).
      */
     @RabbitListener(
             id = "order-listener",
-            queues = RabbitMQConfig.ORDERS_QUEUE,
+            queues = "${rabbitmq.queues.orders:orders.queue}",
             containerFactory = "orderListenerFactory"
     )
     public void processOrder(
@@ -55,9 +61,17 @@ public class OrderConsumer {
     /**
      * Consumidor de DLQ: Monitorea los mensajes que fallaron definitivamente.
      */
-    @RabbitListener(queues = RabbitMQConfig.DLQ_QUEUE)
+    @RabbitListener(queues = "${rabbitmq.queues.orders-dlq:orders.dlq}")
     public void processDLQ(String message) {
         log.error("☠ [DLQ] MENSAJE EN CUARENTENA: {}", message);
         log.error(" → Guardado en DLQ para auditoría y análisis.");
+    }
+
+    public String getOrdersQueue() {
+        return ordersQueue;
+    }
+
+    public String getDlqQueue() {
+        return dlqQueue;
     }
 }
