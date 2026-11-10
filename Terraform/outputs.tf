@@ -28,6 +28,11 @@ output "eureka_dashboard_url" {
   value       = "http://${aws_eip.backend_eip.public_ip}:8761"
 }
 
+output "rabbitmq_dashboard_url" {
+  description = "URL de acceso a RabbitMQ Management UI en el Backend."
+  value       = "http://${aws_eip.backend_eip.public_ip}:15672"
+}
+
 # Output para extraer la llave SSH de forma segura
 output "ec2_ssh_private_key" {
   value     = tls_private_key.deploy_key.private_key_pem
