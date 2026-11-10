@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { entregasApi, gruposApi, trabajosApi } from '../api/services';
 import type { Entrega, EstadoEntrega, Grupo, Trabajo } from '../types/domain';
 import { Modal } from './Modal';
+import { Loader2 } from 'lucide-react';
 
 interface NuevaEntregaModalProps {
   onClose: () => void;
@@ -119,7 +120,14 @@ export function NuevaEntregaModal({ onClose, onCreated }: NuevaEntregaModalProps
             Cancelar
           </button>
           <button type="submit" className="btn-primary" disabled={saving || !grupos.length || !trabajos.length}>
-            {saving ? 'Guardando...' : 'Crear entrega'}
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Crear entrega'
+            )}
           </button>
         </div>
       </form>

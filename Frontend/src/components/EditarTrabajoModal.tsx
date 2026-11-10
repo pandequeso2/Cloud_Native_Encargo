@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { trabajosApi } from '../api/services';
 import type { Trabajo, TipoTrabajo } from '../types/domain';
+import { Loader2 } from 'lucide-react';
 
 interface EditarTrabajoModalProps {
   trabajo: Trabajo;
@@ -106,7 +107,16 @@ export function EditarTrabajoModal({ trabajo, onClose, onUpdated }: EditarTrabaj
 
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Guardar cambios'
+            )}
+          </button>
         </div>
       </form>
     </Modal>

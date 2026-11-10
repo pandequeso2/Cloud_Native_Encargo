@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { integrantesApi, type NuevoIntegrante } from '../api/services';
 import type { Disponibilidad, Integrante } from '../types/domain';
+import { Loader2 } from 'lucide-react';
 
 interface NuevoIntegranteModalProps {
   onClose: () => void;
@@ -112,7 +113,16 @@ export function NuevoIntegranteModal({ onClose, onCreated }: NuevoIntegranteModa
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando...' : 'Crear integrante'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Crear integrante'
+            )}
+          </button>
         </div>
       </form>
     </Modal>

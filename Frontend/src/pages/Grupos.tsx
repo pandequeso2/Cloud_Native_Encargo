@@ -2,10 +2,24 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gruposApi } from '../api/services';
 import type { Grupo } from '../types/domain';
-import { EmptyPanel, ErrorPanel, LoadingPanel, StatusBadge } from '../components/AsyncState';
+import { EmptyPanel, ErrorPanel, LoadingPanel } from '../components/AsyncState';
 import { NuevoGrupoModal } from '../components/NuevoGrupoModal';
 import { EditarGrupoModal } from '../components/EditarGrupoModal';
 import { useAuthInfo } from '../auth/useAuthInfo';
+import {
+  Users,
+  Plus,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  Edit2,
+  Trash2,
+  ArrowRight,
+  Search,
+  Hash,
+  Shield,
+  Layers,
+} from 'lucide-react';
 
 export function Grupos() {
   const auth = useAuthInfo();
@@ -13,12 +27,17 @@ export function Grupos() {
   const [error, setError] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null);
+  const [busqueda, setBusqueda] = useState('');
 
-  useEffect(() => {
+  const cargarGrupos = () => {
     gruposApi
       .listar()
       .then(setGrupos)
       .catch((err) => setError(err.message ?? 'No se pudieron cargar los grupos.'));
+  };
+
+  useEffect(() => {
+    cargarGrupos();
   }, []);
 
   const handleGrupoCreado = (nuevo: Grupo) => {
@@ -34,7 +53,7 @@ export function Grupos() {
   };
 
   const handleGrupoEliminado = async (idGrupo: number) => {
-    const confirmado = window.confirm('¿Seguro que quieres eliminar este grupo?');
+    const confirmado = window.confirm('¿Seguro que deseas eliminar este grupo?');
     if (!confirmado) return;
 
     try {
@@ -45,69 +64,157 @@ export function Grupos() {
     }
   };
 
+  const gruposFiltrados = (grupos ?? []).filter((g) =>
+    g.nombreGrupo.toLowerCase().includes(busqueda.toLowerCase()) ||
+    String(g.idGrupo).includes(busqueda)
+  );
+
   return (
-    <>
-      <header className="content__header">
-        <div className="content__eyebrow">grupos</div>
-        <h1>Grupos de trabajo</h1>
-        <p className="content__subtitle">
-          Todos los grupos registrados en el taller, con su capacidad y estado de cupo.
-        </p>
+    <div className="page-container">
+      {/* Encabezado Principal */}
+      <header className="page-header">
+        <div className="page-header__info">
+          <div className="page-header__eyebrow">Gestión Académica</div>
+          <h1 className="page-header__title">Grupos de Trabajo</h1>
+          <p className="page-header__subtitle">
+            Equipos conformados en el taller, control de cupos máximos y vinculación de encargos.
+          </p>
+        </div>
+
+        {auth?.hasRole('Admin') && (
+          <div className="page-header__actions">
+            <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+              <Plus size={16} />
+              <span>Nuevo Grupo</span>
+            </button>
+          </div>
+        )}
       </header>
 
-      {/* Solo Admin tiene permiso de escritura sobre /api/v1/grupos en el Gateway
-          (ver SecurityConfig.java, CATALOGO_PATHS). Ocultamos el botón para los
-          demás roles para no ofrecer una acción que el backend va a rechazar. */}
-      {auth?.hasRole('Admin') && (
-        <div className="content__actions">
-          <button className="btn-primary" onClick={() => setModalAbierto(true)}>
-            + Nuevo grupo
-          </button>
+      {/* Barra de Filtro y Búsqueda */}
+      <div className="toolbar-section">
+        <div className="search-bar">
+          <Search size={18} className="search-bar__icon" />
+          <input
+            type="text"
+            className="search-bar__input"
+            placeholder="Buscar grupo por nombre o número de ID…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
         </div>
+        <div className="toolbar-stats">
+          <span className="badge badge--info">
+            {gruposFiltrados.length} {gruposFiltrados.length === 1 ? 'grupo registrado' : 'grupos registrados'}
+          </span>
+        </div>
+      </div>
+
+      {error && <ErrorPanel message={error} onRetry={cargarGrupos} />}
+      {!error && !grupos && <LoadingPanel label="Cargando grupos desde el microservicio…" />}
+
+      {grupos && grupos.length === 0 && (
+        <EmptyPanel
+          message="Aún no hay grupos registrados en el taller."
+          subtitle="Crea el primer grupo de trabajo para que los estudiantes puedan integrarse."
+          action={
+            auth?.hasRole('Admin') ? (
+              <button className="btn-primary" onClick={() => setModalAbierto(true)}>
+                <Plus size={16} />
+                <span>Crear Primer Grupo</span>
+              </button>
+            ) : null
+          }
+        />
       )}
 
-      {error && <ErrorPanel message={error} />}
-      {!error && !grupos && <LoadingPanel label="Cargando grupos…" />}
-      {grupos && grupos.length === 0 && <EmptyPanel message="Aún no hay grupos registrados." />}
-
+      {/* Grilla de Tarjetas Modernas de Grupos */}
       {grupos && grupos.length > 0 && (
-        <div className="ledger">
-          {grupos.map((grupo, index) => (
-            <div key={grupo.idGrupo} className="ledger__row">
-              <Link to={`/grupos/${grupo.idGrupo}`} className="ledger__row__link">
-                <span className="ledger__index">{String(index + 1).padStart(2, '0')}</span>
-                <span>
-                  <div className="ledger__title">{grupo.nombreGrupo}</div>
-                  <div className="ledger__meta">
-                    cupo {grupo.capacidadMaxima} · creado {grupo.fechaCreacion}
+        <div className="grid-cards">
+          {gruposFiltrados.map((grupo) => (
+            <div key={grupo.idGrupo} className="data-card data-card--hover">
+              <div className="data-card__body">
+                <div className="data-card__top">
+                  <div className="data-card__icon-badge data-card__icon-badge--blue">
+                    <Users size={20} />
                   </div>
-                </span>
-                <StatusBadge
-                  kind={grupo.grupoLleno ? 'overdue' : 'confirmed'}
-                  label={grupo.grupoLleno ? 'Cupo lleno' : 'Con cupo'}
-                />
-              </Link>
-              {auth?.hasRole('Admin') && (
-                <>
-                  <button type="button" className="btn-secondary" onClick={() => setGrupoEditando(grupo)}>
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => handleGrupoEliminado(grupo.idGrupo)}
-                  >
-                    Eliminar
-                  </button>
-                </>
-              )}
+                  <div className="data-card__chips">
+                    <span className="badge badge--neutral">
+                      <Hash size={12} /> ID {grupo.idGrupo}
+                    </span>
+                    {grupo.grupoLleno ? (
+                      <span className="badge badge--danger">
+                        <AlertCircle size={12} /> Cupo Lleno
+                      </span>
+                    ) : (
+                      <span className="badge badge--success">
+                        <CheckCircle2 size={12} /> Con Cupo
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className="data-card__title">
+                  <Link to={`/grupos/${grupo.idGrupo}`} className="data-card__title-link">
+                    {grupo.nombreGrupo}
+                  </Link>
+                </h3>
+
+                <div className="data-card__meta-item">
+                  <Calendar size={14} className="data-card__meta-icon" />
+                  <span className="data-card__meta-text">
+                    Creado el {grupo.fechaCreacion || 'Fecha no registrada'}
+                  </span>
+                </div>
+
+                <div className="data-card__meta-item">
+                  <Layers size={14} className="data-card__meta-icon" />
+                  <span className="data-card__meta-text">
+                    Capacidad máxima: <strong>{grupo.capacidadMaxima} integrantes</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="data-card__footer">
+                <Link to={`/grupos/${grupo.idGrupo}`} className="btn-action btn-action--view">
+                  <span>Ver Detalle</span>
+                  <ArrowRight size={14} />
+                </Link>
+
+                {auth?.hasRole('Admin') && (
+                  <div className="data-card__admin-actions">
+                    <button
+                      type="button"
+                      className="btn-action btn-action--edit"
+                      onClick={() => setGrupoEditando(grupo)}
+                      title="Editar grupo"
+                    >
+                      <Edit2 size={14} />
+                      <span>Editar</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-action btn-action--danger"
+                      onClick={() => handleGrupoEliminado(grupo.idGrupo)}
+                      title="Eliminar grupo"
+                    >
+                      <Trash2 size={14} />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Modales */}
       {modalAbierto && (
-        <NuevoGrupoModal onClose={() => setModalAbierto(false)} onCreated={handleGrupoCreado} />
+        <NuevoGrupoModal
+          onClose={() => setModalAbierto(false)}
+          onCreated={handleGrupoCreado}
+        />
       )}
 
       {grupoEditando && (
@@ -117,6 +224,6 @@ export function Grupos() {
           onUpdated={handleGrupoActualizado}
         />
       )}
-    </>
+    </div>
   );
 }

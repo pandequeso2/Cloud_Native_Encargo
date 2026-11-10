@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { comentariosApi } from '../api/services';
 import type { Comentario } from '../types/domain';
 import '../styles/crearNota.css';
+import { Loader2, Send, MessageSquare, RefreshCw, Cpu, Server } from 'lucide-react';
 
 export function GestionComentarios() {
   const [entregaId, setEntregaId] = useState<number | ''>(1);
@@ -263,11 +264,21 @@ export function GestionComentarios() {
 
             <button
               type="submit"
-              className="btn-primary w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+              className="btn-primary"
               disabled={submitting}
               style={{ width: '100%', marginTop: '0.5rem' }}
             >
-              {submitting ? 'Publicando en MySQL & Kafka…' : 'Publicar Comentario en Kafka'}
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Publicando en MySQL & Kafka…</span>
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  <span>Publicar Comentario en Kafka</span>
+                </>
+              )}
             </button>
           </form>
         </section>

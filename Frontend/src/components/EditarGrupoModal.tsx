@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { gruposApi } from '../api/services';
 import type { Grupo } from '../types/domain';
+import { Loader2 } from 'lucide-react';
 
 interface EditarGrupoModalProps {
   grupo: Grupo;
@@ -76,7 +77,16 @@ export function EditarGrupoModal({ grupo, onClose, onUpdated }: EditarGrupoModal
 
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Guardar cambios'
+            )}
+          </button>
         </div>
       </form>
     </Modal>

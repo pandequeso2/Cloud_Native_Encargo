@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { trabajosApi, type NuevoTrabajo } from '../api/services';
 import type { Trabajo, TipoTrabajo } from '../types/domain';
+import { Loader2 } from 'lucide-react';
 
 interface NuevoTrabajoModalProps {
   onClose: () => void;
@@ -127,7 +128,14 @@ export function NuevoTrabajoModal({ onClose, onCreated }: NuevoTrabajoModalProps
             Cancelar
           </button>
           <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Guardando…' : 'Crear trabajo'}
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Crear trabajo'
+            )}
           </button>
         </div>
       </form>

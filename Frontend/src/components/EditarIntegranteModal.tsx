@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { integrantesApi } from '../api/services';
 import type { Disponibilidad, Integrante } from '../types/domain';
+import { Loader2 } from 'lucide-react';
 
 interface EditarIntegranteModalProps {
   integrante: Integrante;
@@ -115,7 +116,16 @@ export function EditarIntegranteModal({ integrante, onClose, onUpdated }: Editar
 
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Guardando…</span>
+              </>
+            ) : (
+              'Guardar cambios'
+            )}
+          </button>
         </div>
       </form>
     </Modal>
